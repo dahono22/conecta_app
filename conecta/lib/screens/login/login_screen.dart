@@ -26,9 +26,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (ok) {
       final rol = authService.usuariActual!.rol;
       if (rol == RolUsuari.estudiant) {
-        Navigator.pushReplacementNamed(context, '/home_estudiant');
+        Navigator.pushReplacementNamed(context, AppRoutes.homeEstudiant);
       } else {
-        Navigator.pushReplacementNamed(context, '/home_empresa');
+        Navigator.pushReplacementNamed(context, AppRoutes.homeEmpresa);
       }
     } else {
       setState(() {
@@ -64,6 +64,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               onPressed: _iniciarSessio,
               child: const Text('Iniciar Sessió'),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.register);
+              },
+              child: const Text("No tens compte? Registra't aquí"),
             ),
           ],
         ),
