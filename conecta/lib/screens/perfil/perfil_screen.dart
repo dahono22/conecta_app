@@ -33,6 +33,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              Text(
+                _controller.rol == RolUsuari.estudiant
+                    ? 'Perfil de l’estudiant'
+                    : 'Perfil de l’empresa',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _controller.nomController,
                 decoration: const InputDecoration(labelText: 'Nom complet'),
@@ -50,9 +57,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _controller.descripcioController,
-                  decoration:
-                      const InputDecoration(labelText: 'Descripció de l’empresa'),
+                  decoration: const InputDecoration(
+                    labelText: 'Descripció de l’empresa',
+                    hintText: 'Ex: Som una startup dedicada a...',
+                  ),
                   maxLines: 3,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Aquest text serà visible per als estudiants.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
               const SizedBox(height: 24),
