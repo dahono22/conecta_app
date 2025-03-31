@@ -7,6 +7,11 @@ class AuthService with ChangeNotifier {
 
   Usuari? get usuariActual => _usuariActual;
 
+  set usuariActual(Usuari? usuari) {
+    _usuariActual = usuari;
+    notifyListeners(); // Opcional: actualitza UI quan es modifica
+  }
+
   bool login(String email, String contrasenya) {
     try {
       final usuari = _usuaris.firstWhere(
