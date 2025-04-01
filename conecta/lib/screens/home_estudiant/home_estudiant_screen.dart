@@ -39,6 +39,11 @@ class HomeEstudiantScreen extends StatelessWidget {
               onPressed: () => Navigator.pushNamed(context, AppRoutes.perfil),
               child: const Text('Veure perfil'),
             ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.llistatOfertes),
+              child: const Text('Veure Ofertes'),
+            ),
           ],
         ),
       ),
