@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
 import 'perfil_controller.dart';
+import '../../services/offer_application_service.dart';
+import '../../services/offer_service.dart';
+import '../../models/oferta.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -21,6 +24,50 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _controller = PerfilController(context);
   }
 
+  Widget _buildOfertesAplicades(BuildContext context) {
+    final offerService = Provider.of<OfferService>(context);
+    final applicationService = Provider.of<OfferApplicationService>(context);
+    final ofertesAplicades = offerService.ofertes.where((oferta) {
+      return applicationService.jaAplicada(oferta.id);
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Ofertes aplicades:',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        if (ofertesAplicades.isEmpty)
+          const Text('Encara no has aplicat a cap oferta.')
+        else
+          Column(
+            children: ofertesAplicades.map((oferta) => Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      oferta.titol,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('${oferta.empresa} - ${oferta.ubicacio}'),
+                  ],
+                ),
+              ),
+            )).toList(),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEmpresa = _controller.rol == RolUsuari.empresa;
@@ -35,8 +82,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
             children: [
               Text(
                 _controller.rol == RolUsuari.estudiant
-                    ? 'Perfil de l’estudiant'
-                    : 'Perfil de l’empresa',
+                    ? 'Perfil de l\'estudiant'
+                    : 'Perfil de l\'empresa',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 24),
@@ -58,7 +105,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 TextFormField(
                   controller: _controller.descripcioController,
                   decoration: const InputDecoration(
-                    labelText: 'Descripció de l’empresa',
+                    labelText: 'Descripció de l\'empresa',
                     hintText: 'Ex: Som una startup dedicada a...',
                   ),
                   maxLines: 3,
@@ -67,6 +114,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 const Text(
                   'Aquest text serà visible per als estudiants.',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+              if (!isEmpresa) ...[
+                const SizedBox(height: 24),
+                Consumer<OfferApplicationService>(
+                  builder: (context, applicationService, _) {
+                    return _buildOfertesAplicades(context);
+                  },
                 ),
               ],
               const SizedBox(height: 24),
