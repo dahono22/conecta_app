@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1092115090674",
+    "project_id": "conectadam-924b7",
+    "storage_bucket": "conectadam-924b7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092115090674:android:75f838acc46d4e9cddd46b",
+        "android_client_info": {
+          "package_name": "com.example.conecta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmZya0ee1NCmA-bQlGYxETTeeiEKD-SpE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
