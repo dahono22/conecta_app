@@ -1,6 +1,4 @@
-// 🧩 BEMEN3-7.1 – Evitar duplicats: no deixar aplicar dues vegades a la mateixa oferta
-// ✅ Fitxer: detail_oferta_screen.dart (afegim validació prèvia abans d'aplicar)
-
+// ✅ DETAIL_OFERTA_SCREEN CORREGIT (BEMEN3-7.2 amb gestió d'errors)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/offer_service.dart';
@@ -11,69 +9,102 @@ class DetailOfertaScreen extends StatelessWidget {
   const DetailOfertaScreen({super.key});
 
   Future<void> _mostrarDialogAplicacio(
-      BuildContext context, String idOferta, String titolOferta) async {
+    BuildContext context,
+    String idOferta,
+    String titolOferta,
+  ) async {
     final applicationService =
         Provider.of<OfferApplicationService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
     final userId = authService.usuariActual?.id;
 
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No s\'ha pogut identificar l\'usuari.'),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No s'ha pogut identificar l'usuari.")),
+        );
+      }
       return;
     }
 
-    // 🔍 Validació: ja ha aplicat?
     final jaAplicada = await applicationService.jaAplicadaFirestore(
       usuariId: userId,
       ofertaId: idOferta,
     );
 
     if (jaAplicada) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ja has aplicat a aquesta oferta.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Ja has aplicat a aquesta oferta.")),
+        );
+      }
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Confirmar aplicació'),
-          content: Text('Vols aplicar a l\'oferta "$titolOferta"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel·lar'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await applicationService.aplicarAOferta(userId, idOferta);
-
-                if (!context.mounted) return;
-
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Has aplicat correctament.'),
-                    duration: Duration(seconds: 2),
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return Consumer<OfferApplicationService>(
+            builder: (context, applicationService, _) {
+              return AlertDialog(
+                title: const Text('Confirmar aplicació'),
+                content: Text('Vols aplicar a l\'oferta "$titolOferta"?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel·lar'),
                   ),
-                );
-                Navigator.of(context).pop(true);
-              },
-              child: const Text('Confirmar'),
-            ),
-          ],
-        );
-      },
-    );
+                  ElevatedButton(
+                    onPressed: applicationService.loading
+                        ? null
+                        : () async {
+                            try {
+                              applicationService.setLoading(true);
+                              await applicationService.aplicarAOferta(
+                                userId,
+                                idOferta,
+                              );
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Has aplicat correctament.'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                              Navigator.of(context).pop(true);
+                            } catch (_) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(applicationService.error ??
+                                        'Error inesperat.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              applicationService.setLoading(false);
+                            }
+                          },
+                    child: applicationService.loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Confirmar'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -124,7 +155,10 @@ class DetailOfertaScreen extends StatelessWidget {
                           icon: const Icon(Icons.send),
                           label: const Text('Aplicar'),
                           onPressed: () => _mostrarDialogAplicacio(
-                              context, oferta.id, oferta.titol),
+                            context,
+                            oferta.id,
+                            oferta.titol,
+                          ),
                         );
                 },
               ),

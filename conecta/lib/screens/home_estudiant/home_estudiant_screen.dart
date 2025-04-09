@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/offer_application_service.dart';
 import '../../routes/app_routes.dart';
 
 class HomeEstudiantScreen extends StatelessWidget {
@@ -8,11 +9,16 @@ class HomeEstudiantScreen extends StatelessWidget {
 
   void _logout(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
+    final applicationService =
+        Provider.of<OfferApplicationService>(context, listen: false);
+
     authService.logout();
+    applicationService.clear();
+
     Navigator.pushNamedAndRemoveUntil(
-      context, 
-      AppRoutes.login, 
-      (route) => false
+      context,
+      AppRoutes.login,
+      (route) => false,
     );
   }
 
@@ -41,7 +47,8 @@ class HomeEstudiantScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.llistatOfertes),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.llistatOfertes),
               child: const Text('Veure Ofertes'),
             ),
           ],
