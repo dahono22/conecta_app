@@ -1,7 +1,10 @@
+// 🧩 BEMEN3-6.3 – Mostrar aplicacions reals al perfil des de Firestore
+// ✅ Fitxer: perfil_screen.dart (modificat per carregar dades reals de Firestore)
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../models/usuari.dart'; // Aquí se encuentra el enum RolUsuari y la clase Usuari
+import '../../models/usuari.dart';
 import 'perfil_controller.dart';
 import '../../services/offer_application_service.dart';
 import '../../services/offer_service.dart';
@@ -16,6 +19,7 @@ class PerfilScreen extends StatefulWidget {
 class _PerfilScreenState extends State<PerfilScreen> {
   final _formKey = GlobalKey<FormState>();
   late PerfilController _controller;
+  late Future<void> _carregarAplicacionsFuture;
 
   @override
   void initState() {
@@ -23,18 +27,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _controller = PerfilController(context);
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    // Se usa el getter correcto: usuariActual
     final userId = authService.usuariActual?.id;
 
-    if (userId != null) {
-      Provider.of<OfferApplicationService>(context, listen: false)
-          .carregarAplicacions(userId);
-    }
+    _carregarAplicacionsFuture = userId != null
+        ? Provider.of<OfferApplicationService>(context, listen: false)
+            .carregarAplicacions(userId)
+        : Future.value();
   }
 
   Widget _buildOfertesAplicades(BuildContext context) {
     final offerService = Provider.of<OfferService>(context);
     final applicationService = Provider.of<OfferApplicationService>(context);
+
     final ofertesAplicades = offerService.ofertes.where((oferta) {
       return applicationService.jaAplicada(oferta.id);
     }).toList();
@@ -126,9 +130,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ],
               if (!isEmpresa) ...[
                 const SizedBox(height: 24),
-                Consumer<OfferApplicationService>(
-                  builder: (context, applicationService, _) {
-                    return _buildOfertesAplicades(context);
+                FutureBuilder(
+                  future: _carregarAplicacionsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else {
+                      return _buildOfertesAplicades(context);
+                    }
                   },
                 ),
               ],
