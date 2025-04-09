@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../models/usuari.dart';
+import '../../models/usuari.dart'; // Aquí se encuentra el enum RolUsuari y la clase Usuari
 import 'perfil_controller.dart';
 import '../../services/offer_application_service.dart';
 import '../../services/offer_service.dart';
-import '../../models/oferta.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -22,6 +21,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
   void initState() {
     super.initState();
     _controller = PerfilController(context);
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    // Se usa el getter correcto: usuariActual
+    final userId = authService.usuariActual?.id;
+
+    if (userId != null) {
+      Provider.of<OfferApplicationService>(context, listen: false)
+          .carregarAplicacions(userId);
+    }
   }
 
   Widget _buildOfertesAplicades(BuildContext context) {

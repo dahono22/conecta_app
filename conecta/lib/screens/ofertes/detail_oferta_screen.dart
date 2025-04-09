@@ -2,11 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/offer_service.dart';
 import '../../services/offer_application_service.dart';
+import '../../services/auth_service.dart'; // Para obtener el userId
 
 class DetailOfertaScreen extends StatelessWidget {
   const DetailOfertaScreen({super.key});
 
-  void _mostrarDialogAplicacio(BuildContext context, String idOferta, String titolOferta) {
+  void _mostrarDialogAplicacio(
+      BuildContext context, String idOferta, String titolOferta) {
+    final applicationService =
+        Provider.of<OfferApplicationService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    // Se usa el getter correcto: usuariActual
+    final userId = authService.usuariActual?.id;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No s\'ha pogut identificar l\'usuari.'),
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -19,9 +36,11 @@ class DetailOfertaScreen extends StatelessWidget {
               child: const Text('Cancel·lar'),
             ),
             TextButton(
-              onPressed: () {
-                Provider.of<OfferApplicationService>(context, listen: false)
-                    .aplicarAOferta(idOferta);
+              onPressed: () async {
+                await applicationService.aplicarAOferta(userId, idOferta);
+
+                if (!context.mounted) return;
+
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -29,10 +48,7 @@ class DetailOfertaScreen extends StatelessWidget {
                     duration: Duration(seconds: 2),
                   ),
                 );
-                // Forzar rebuild si es necesario
-                if (context.mounted) {
-                  Navigator.of(context).pop(true); // Retorna true para indicar éxito
-                }
+                Navigator.of(context).pop(true);
               },
               child: const Text('Confirmar'),
             ),
@@ -62,11 +78,12 @@ class DetailOfertaScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Empresa: ${oferta.empresa}',
-                 style: Theme.of(context).textTheme.titleMedium),
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text('Ubicació: ${oferta.ubicacio}'),
             const SizedBox(height: 16),
-            Text('Descripció:', style: Theme.of(context).textTheme.titleSmall),
+            Text('Descripció:',
+                style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Text(oferta.descripcio),
             const Spacer(),
@@ -76,10 +93,12 @@ class DetailOfertaScreen extends StatelessWidget {
                   return applicationService.jaAplicada(oferta.id)
                       ? const Column(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green, size: 48),
+                            Icon(Icons.check_circle,
+                                color: Colors.green, size: 48),
                             SizedBox(height: 8),
                             Text('Ja has aplicat a aquesta oferta',
-                                style: TextStyle(fontSize: 16, color: Colors.grey)),
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey)),
                           ],
                         )
                       : ElevatedButton.icon(
