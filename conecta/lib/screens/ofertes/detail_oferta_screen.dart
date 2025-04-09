@@ -1,24 +1,42 @@
+// 🧩 BEMEN3-7.1 – Evitar duplicats: no deixar aplicar dues vegades a la mateixa oferta
+// ✅ Fitxer: detail_oferta_screen.dart (afegim validació prèvia abans d'aplicar)
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/offer_service.dart';
 import '../../services/offer_application_service.dart';
-import '../../services/auth_service.dart'; // Para obtener el userId
+import '../../services/auth_service.dart';
 
 class DetailOfertaScreen extends StatelessWidget {
   const DetailOfertaScreen({super.key});
 
-  void _mostrarDialogAplicacio(
-      BuildContext context, String idOferta, String titolOferta) {
+  Future<void> _mostrarDialogAplicacio(
+      BuildContext context, String idOferta, String titolOferta) async {
     final applicationService =
         Provider.of<OfferApplicationService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
-    // Se usa el getter correcto: usuariActual
     final userId = authService.usuariActual?.id;
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No s\'ha pogut identificar l\'usuari.'),
+        ),
+      );
+      return;
+    }
+
+    // 🔍 Validació: ja ha aplicat?
+    final jaAplicada = await applicationService.jaAplicadaFirestore(
+      usuariId: userId,
+      ofertaId: idOferta,
+    );
+
+    if (jaAplicada) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ja has aplicat a aquesta oferta.'),
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -90,7 +108,8 @@ class DetailOfertaScreen extends StatelessWidget {
             Center(
               child: Consumer<OfferApplicationService>(
                 builder: (context, applicationService, _) {
-                  return applicationService.jaAplicada(oferta.id)
+                  final aplicada = applicationService.jaAplicada(oferta.id);
+                  return aplicada
                       ? const Column(
                           children: [
                             Icon(Icons.check_circle,

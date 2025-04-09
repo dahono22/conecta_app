@@ -38,6 +38,20 @@ class OfferApplicationService with ChangeNotifier {
   }
 
   List<String> get idsAplicades => _ofertesAplicades.toList();
+
+  // ✅ Mètode afegit per a validació a Firestore
+  Future<bool> jaAplicadaFirestore({
+    required String usuariId,
+    required String ofertaId,
+  }) async {
+    final snapshot = await _db
+        .collection('aplicacions')
+        .where('usuariId', isEqualTo: usuariId)
+        .where('ofertaId', isEqualTo: ofertaId)
+        .get();
+
+    return snapshot.docs.isNotEmpty;
+  }
 }
 
 // ✅ IMPORTANTE: Actualiza el nombre de la colección a 'aplicacions' (no 'applications')
