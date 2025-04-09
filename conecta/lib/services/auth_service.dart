@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/usuari.dart';
 
 class AuthService with ChangeNotifier {
-  final List<Usuari> _usuaris = []; // Simulació de base de dades
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
   Usuari? _usuariActual;
 
   Usuari? get usuariActual => _usuariActual;
@@ -12,22 +13,39 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
-  bool login(String email, String contrasenya) {
-    try {
-      final usuari = _usuaris.firstWhere(
-        (u) => u.email == email && u.contrasenya == contrasenya,
-      );
-      _usuariActual = usuari;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      return false;
-    }
+  Future<void> desarUsuariFirestore(Usuari usuari) async {
+    await _db.collection('usuaris').doc(usuari.id).set({
+      'id': usuari.id,
+      'nom': usuari.nom,
+      'email': usuari.email,
+      'rol': usuari.rol.name,
+      'descripcio': usuari.descripcio ?? '',
+    });
   }
 
-  bool registre(String nom, String email, String contrasenya, RolUsuari rol) {
-    final existent = _usuaris.any((u) => u.email == email);
-    if (existent) return false;
+  Future<Usuari?> carregarUsuariFirestore(String id) async {
+    final doc = await _db.collection('usuaris').doc(id).get();
+    if (!doc.exists) return null;
+
+    final data = doc.data()!;
+    return Usuari(
+      id: data['id'],
+      nom: data['nom'],
+      email: data['email'],
+      contrasenya: '',
+      rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
+      descripcio: data['descripcio'],
+    );
+  }
+
+  Future<bool> registre(String nom, String email, String contrasenya, RolUsuari rol) async {
+    final query = await _db
+        .collection('usuaris')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) return false;
 
     final nouUsuari = Usuari(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -35,10 +53,35 @@ class AuthService with ChangeNotifier {
       email: email,
       contrasenya: contrasenya,
       rol: rol,
+      descripcio: '',
     );
 
-    _usuaris.add(nouUsuari);
+    await desarUsuariFirestore(nouUsuari);
     _usuariActual = nouUsuari;
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> login(String email, String contrasenya) async {
+    final query = await _db
+        .collection('usuaris')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) return false;
+
+    final data = query.docs.first.data();
+    final usuari = Usuari(
+      id: data['id'],
+      nom: data['nom'],
+      email: data['email'],
+      contrasenya: contrasenya,
+      rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
+      descripcio: data['descripcio'],
+    );
+
+    _usuariActual = usuari;
     notifyListeners();
     return true;
   }

@@ -15,25 +15,27 @@ class PerfilController {
     final usuari = Provider.of<AuthService>(context, listen: false).usuariActual!;
     nomController = TextEditingController(text: usuari.nom);
     emailController = TextEditingController(text: usuari.email);
-    descripcioController = TextEditingController(); // Potser es carrega més endavant
+    descripcioController = TextEditingController(text: usuari.descripcio ?? '');
     rol = usuari.rol;
   }
 
-  void guardarCanvis(GlobalKey<FormState> formKey) {
+  Future<void> guardarCanvis(GlobalKey<FormState> formKey) async {
     if (!formKey.currentState!.validate()) return;
 
     final authService = Provider.of<AuthService>(context, listen: false);
     final usuari = authService.usuariActual!;
 
-    authService.usuariActual = Usuari(
+    final nouUsuari = Usuari(
       id: usuari.id,
       nom: nomController.text.trim(),
       email: emailController.text.trim(),
       contrasenya: usuari.contrasenya,
       rol: usuari.rol,
+      descripcio: descripcioController.text.trim(),
     );
 
-    authService.notifyListeners();
+    authService.usuariActual = nouUsuari;
+    await authService.desarUsuariFirestore(nouUsuari);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Canvis desats correctament')),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../models/usuari.dart';
 import '../../routes/app_routes.dart';
+import '../../models/usuari.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,20 +16,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   String? _errorText;
 
-  void _iniciarSessio() {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
+  void _login() async {
     final authService = Provider.of<AuthService>(context, listen: false);
-    final ok = authService.login(email, password);
+    final success = await authService.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
 
-    if (ok) {
-      final rol = authService.usuariActual!.rol;
-      if (rol == RolUsuari.estudiant) {
-        Navigator.pushReplacementNamed(context, AppRoutes.homeEstudiant);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.homeEmpresa);
-      }
+    if (success == true) {
+      final rol = authService.usuariActual?.rol;
+      final ruta = rol == RolUsuari.empresa
+          ? AppRoutes.homeEmpresa
+          : AppRoutes.homeEstudiant;
+      Navigator.pushReplacementNamed(context, ruta);
     } else {
       setState(() {
         _errorText = 'Credencials incorrectes';
@@ -42,35 +41,32 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Iniciar Sessió')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             if (_errorText != null)
-              Text(
-                _errorText!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              Text(_errorText!, style: const TextStyle(color: Colors.red)),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Correu electrònic'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             TextField(
               controller: _passwordController,
-              obscureText: true,
               decoration: const InputDecoration(labelText: 'Contrasenya'),
+              obscureText: true,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _iniciarSessio,
-              child: const Text('Iniciar Sessió'),
+              onPressed: _login,
+              child: const Text('Entrar'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             TextButton(
               onPressed: () {
                 Navigator.pushNamed(context, AppRoutes.register);
               },
-              child: const Text("No tens compte? Registra't aquí"),
+              child: const Text("No tens compte? Registra't"),
             ),
           ],
         ),

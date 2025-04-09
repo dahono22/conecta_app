@@ -1,13 +1,8 @@
-// 🧩 BEMEN3-6.3 – Mostrar aplicacions reals al perfil des de Firestore
-// ✅ Fitxer: perfil_screen.dart (modificat per carregar dades reals de Firestore)
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
 import 'perfil_controller.dart';
-import '../../services/offer_application_service.dart';
-import '../../services/offer_service.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -19,69 +14,16 @@ class PerfilScreen extends StatefulWidget {
 class _PerfilScreenState extends State<PerfilScreen> {
   final _formKey = GlobalKey<FormState>();
   late PerfilController _controller;
-  late Future<void> _carregarAplicacionsFuture;
 
   @override
   void initState() {
     super.initState();
     _controller = PerfilController(context);
-
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final userId = authService.usuariActual?.id;
-
-    _carregarAplicacionsFuture = userId != null
-        ? Provider.of<OfferApplicationService>(context, listen: false)
-            .carregarAplicacions(userId)
-        : Future.value();
-  }
-
-  Widget _buildOfertesAplicades(BuildContext context) {
-    final offerService = Provider.of<OfferService>(context);
-    final applicationService = Provider.of<OfferApplicationService>(context);
-
-    final ofertesAplicades = offerService.ofertes.where((oferta) {
-      return applicationService.jaAplicada(oferta.id);
-    }).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Ofertes aplicades:',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        if (ofertesAplicades.isEmpty)
-          const Text('Encara no has aplicat a cap oferta.')
-        else
-          Column(
-            children: ofertesAplicades.map((oferta) => Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      oferta.titol,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text('${oferta.empresa} - ${oferta.ubicacio}'),
-                  ],
-                ),
-              ),
-            )).toList(),
-          ),
-      ],
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
     final isEmpresa = _controller.rol == RolUsuari.empresa;
 
     return Scaffold(
@@ -93,9 +35,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           child: ListView(
             children: [
               Text(
-                _controller.rol == RolUsuari.estudiant
-                    ? 'Perfil de l\'estudiant'
-                    : 'Perfil de l\'empresa',
+                isEmpresa ? 'Perfil de l\'empresa' : 'Perfil de l\'estudiant',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 24),
@@ -126,19 +66,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 const Text(
                   'Aquest text serà visible per als estudiants.',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-              if (!isEmpresa) ...[
-                const SizedBox(height: 24),
-                FutureBuilder(
-                  future: _carregarAplicacionsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else {
-                      return _buildOfertesAplicades(context);
-                    }
-                  },
                 ),
               ],
               const SizedBox(height: 24),
