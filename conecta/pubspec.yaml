@@ -18,6 +18,7 @@ dependencies:
   cloud_firestore: ^4.8.2
   firebase_storage: ^11.2.0
   file_picker: ^6.1.1
+  url_launcher: ^6.2.5 # 📦 AFEGIT
 
 dev_dependencies:
   flutter_test:
