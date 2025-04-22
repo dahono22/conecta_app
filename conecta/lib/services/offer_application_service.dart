@@ -21,7 +21,11 @@ class OfferApplicationService with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> aplicarAOferta(String userId, String idOferta) async {
+  Future<void> aplicarAOferta(
+    String userId,
+    String idOferta, {
+    String? cvUrl,
+  }) async {
     _error = null;
     final docRef = _db.collection('aplicacions').doc('$userId-$idOferta');
 
@@ -30,6 +34,7 @@ class OfferApplicationService with ChangeNotifier {
         'usuariId': userId,
         'ofertaId': idOferta,
         'timestamp': FieldValue.serverTimestamp(),
+        if (cvUrl != null && cvUrl.isNotEmpty) 'cvUrl': cvUrl,
       });
 
       _ofertesAplicades.add(idOferta);
