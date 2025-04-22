@@ -15,6 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nomController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _cvUrlController = TextEditingController();
 
   RolUsuari _rol = RolUsuari.estudiant;
 
@@ -67,6 +68,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   });
                 },
               ),
+              if (_rol == RolUsuari.estudiant) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _cvUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Enllaç al CV (opcional)',
+                    hintText: 'https://drive.google.com/...',
+                  ),
+                  keyboardType: TextInputType.url,
+                  validator: (value) {
+                    final uri = Uri.tryParse(value ?? '');
+                    if (value != null && value.isNotEmpty && (uri == null || !uri.hasAbsolutePath)) {
+                      return 'L’enllaç no és vàlid.';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () async {
@@ -77,7 +96,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _emailController.text.trim(),
                     _passwordController.text.trim(),
                     _rol,
+                    cvUrl: _rol == RolUsuari.estudiant
+                        ? _cvUrlController.text.trim()
+                        : null,
                   );
+
+                  if (!mounted) return;
 
                   if (success) {
                     Navigator.of(context).pushReplacementNamed('/login');

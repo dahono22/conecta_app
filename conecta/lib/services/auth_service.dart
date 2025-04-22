@@ -22,6 +22,7 @@ class AuthService with ChangeNotifier {
       'email': usuari.email,
       'rol': usuari.rol.name,
       'descripcio': usuari.descripcio ?? '',
+      'cvUrl': usuari.cvUrl ?? '',
     }, SetOptions(merge: true));
   }
 
@@ -37,11 +38,12 @@ class AuthService with ChangeNotifier {
       contrasenya: '',
       rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
       descripcio: data['descripcio'],
+      cvUrl: data['cvUrl'],
     );
   }
 
   void listenCanvisUsuari(String userId) {
-    _usuariListener?.cancel(); // cancel·lem el listener anterior si hi era
+    _usuariListener?.cancel();
 
     _usuariListener = _db.collection('usuaris').doc(userId).snapshots().listen((snapshot) {
       if (snapshot.exists) {
@@ -53,13 +55,14 @@ class AuthService with ChangeNotifier {
           contrasenya: '',
           rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
           descripcio: data['descripcio'],
+          cvUrl: data['cvUrl'],
         );
         notifyListeners();
       }
     });
   }
 
-  Future<bool> registre(String nom, String email, String contrasenya, RolUsuari rol) async {
+  Future<bool> registre(String nom, String email, String contrasenya, RolUsuari rol, {String? cvUrl}) async {
     final query = await _db
         .collection('usuaris')
         .where('email', isEqualTo: email)
@@ -75,6 +78,7 @@ class AuthService with ChangeNotifier {
       contrasenya: contrasenya,
       rol: rol,
       descripcio: '',
+      cvUrl: cvUrl,
     );
 
     await desarUsuariFirestore(nouUsuari);
@@ -101,6 +105,7 @@ class AuthService with ChangeNotifier {
       contrasenya: contrasenya,
       rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
       descripcio: data['descripcio'],
+      cvUrl: data['cvUrl'],
     );
 
     _usuariActual = usuari;

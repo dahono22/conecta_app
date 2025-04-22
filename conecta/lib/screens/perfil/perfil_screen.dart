@@ -136,14 +136,29 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ],
               if (!isEmpresa) ...[
                 const SizedBox(height: 24),
-                const Text('Currículum:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Currículum (enllaç URL):', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
+                TextFormField(
+                  controller: _controller.cvUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Enllaç al CV (Drive, Dropbox...)',
+                    hintText: 'https://...',
+                  ),
+                  keyboardType: TextInputType.url,
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty && !Uri.tryParse(value)!.hasAbsolutePath) {
+                      return 'L\'enllaç no és vàlid.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
                 if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
                   Row(
                     children: [
                       const Icon(Icons.check_circle, color: Colors.green),
                       const SizedBox(width: 8),
-                      const Text('Currículum pujat correctament'),
+                      const Text('Enllaç actual:'),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.visibility),
@@ -158,15 +173,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     ],
                   )
                 else
-                  const Text('No has pujat cap currículum.'),
-                TextButton.icon(
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Pujar currículum (PDF)'),
-                  onPressed: () async {
-                    await _controller.pujarCV();
-                    setState(() {}); // 🔁 refresca la vista
-                  },
-                ),
+                  const Text('Encara no has afegit cap enllaç de currículum.'),
               ],
               if (!isEmpresa) ...[
                 const SizedBox(height: 24),

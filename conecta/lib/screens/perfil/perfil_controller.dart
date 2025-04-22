@@ -14,6 +14,7 @@ class PerfilController {
   late TextEditingController nomController;
   late TextEditingController emailController;
   late TextEditingController descripcioController;
+  late TextEditingController cvUrlController;
   late RolUsuari rol;
 
   PerfilController(this.context) {
@@ -21,6 +22,7 @@ class PerfilController {
     nomController = TextEditingController(text: usuari.nom);
     emailController = TextEditingController(text: usuari.email);
     descripcioController = TextEditingController(text: usuari.descripcio ?? '');
+    cvUrlController = TextEditingController(text: usuari.cvUrl ?? '');
     rol = usuari.rol;
   }
 
@@ -39,7 +41,7 @@ class PerfilController {
         contrasenya: usuari.contrasenya,
         rol: usuari.rol,
         descripcio: descripcioController.text.trim(),
-        cvUrl: usuari.cvUrl,
+        cvUrl: cvUrlController.text.trim(),
       );
 
       authService.usuariActual = nouUsuari;
@@ -57,75 +59,12 @@ class PerfilController {
     }
   }
 
+  // Método opcional - se puede eliminar si no se usa
   Future<void> pujarCV() async {
     if (!context.mounted) return;
-
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-        allowMultiple: false,
-      );
-
-      if (result == null || result.files.isEmpty) return;
-
-      final file = File(result.files.single.path!);
-      final usuari = authService.usuariActual!;
-      final fileName = 'cv_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final storageRef = FirebaseStorage.instance.ref('usuaris/${usuari.id}/$fileName');
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 20),
-                  Text('Pujant currículum...'),
-                ],
-              ),
-              duration: Duration(minutes: 1),
-              dismissDirection: DismissDirection.none,
-            ),
-          );
-
-          final snapshot = await storageRef.putFile(file);
-          final downloadUrl = await snapshot.ref.getDownloadURL();
-
-          await FirebaseFirestore.instance.collection('usuaris').doc(usuari.id).set({
-            'cvUrl': downloadUrl,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-
-          authService.usuariActual = usuari.copyWith(cvUrl: downloadUrl);
-
-          if (context.mounted) {
-            scaffoldMessenger.hideCurrentSnackBar();
-            scaffoldMessenger.showSnackBar(
-              const SnackBar(content: Text('Currículum pujat correctament')),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            scaffoldMessenger.hideCurrentSnackBar();
-            scaffoldMessenger.showSnackBar(
-              SnackBar(content: Text('Error al pujar CV: $e')),
-            );
-          }
-        }
-      });
-    } catch (e) {
-      scaffoldMessenger.hideCurrentSnackBar();
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Error seleccionant el fitxer: $e'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(content: Text('Esta funcionalidad ha sido deshabilitada')),
+    );
   }
 }
