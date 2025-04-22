@@ -17,8 +17,11 @@ class HomeEmpresaScreen extends StatelessWidget {
   }
 
   void _crearOferta(BuildContext context) {
-    // Aquesta funció simplement navega a la nova pantalla de creació d'ofertes
-    Navigator.pushNamed(context, '/crear-oferta');
+    Navigator.pushNamed(context, AppRoutes.crearOferta);
+  }
+
+  void _veureMevesOfertes(BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.mevesOfertes);
   }
 
   @override
@@ -49,6 +52,12 @@ class HomeEmpresaScreen extends StatelessWidget {
               onPressed: () => _crearOferta(context),
               icon: const Icon(Icons.add_business),
               label: const Text('Publicar nova oferta'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _veureMevesOfertes(context),
+              icon: const Icon(Icons.list),
+              label: const Text('Veure les meves ofertes'),
             ),
           ],
         ),
