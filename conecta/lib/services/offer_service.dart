@@ -11,12 +11,17 @@ class OfferService with ChangeNotifier {
     required String ubicacio,
     required String empresaId,
   }) async {
+    // Obtenim el nom de l'empresa
+    final empresaDoc = await _db.collection('usuaris').doc(empresaId).get();
+    final empresaNom = empresaDoc.data()?['nom'] ?? 'Empresa desconeguda';
+
     final novaOferta = {
       'titol': titol,
       'descripcio': descripcio,
       'requisits': requisits,
       'ubicacio': ubicacio,
       'empresaId': empresaId,
+      'empresa': empresaNom, // afegim el nom visible
       'dataPublicacio': FieldValue.serverTimestamp(),
       'estat': 'pendent',
     };
