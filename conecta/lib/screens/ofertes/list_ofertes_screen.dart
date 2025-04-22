@@ -1,6 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../models/oferta.dart';
-import '../../services/offer_service.dart';
 import '../../routes/app_routes.dart';
 
 class ListOfertesScreen extends StatefulWidget {
@@ -11,41 +10,33 @@ class ListOfertesScreen extends StatefulWidget {
 }
 
 class _ListOfertesScreenState extends State<ListOfertesScreen> {
-  final OfferService _offerService = OfferService();
   final TextEditingController _searchController = TextEditingController();
-  List<Oferta> _filtered = [];
   String? _selectedUbicacio;
 
   @override
   void initState() {
     super.initState();
-    _filtered = _offerService.ofertes;
-    _searchController.addListener(_onSearch);
+    _searchController.addListener(() => setState(() {}));
   }
 
-  void _onSearch() {
-    final query = _searchController.text.toLowerCase();
-    final ubicacio = _selectedUbicacio;
+  List<DocumentSnapshot> _filtrarOfertes(
+    List<DocumentSnapshot> ofertes,
+    String query,
+    String? ubicacio,
+  ) {
+    return ofertes.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
 
-    setState(() {
-      _filtered = _offerService.ofertes.where((oferta) {
-        final matchText = oferta.titol.toLowerCase().contains(query) ||
-                         oferta.descripcio.toLowerCase().contains(query);
-        final matchUbicacio = ubicacio == null || 
-                             ubicacio == 'Totes' || 
-                             oferta.ubicacio == ubicacio;
-        return matchText && matchUbicacio;
-      }).toList();
-    });
-  }
+      final matchText = query.isEmpty ||
+          data['titol'].toString().toLowerCase().contains(query) ||
+          data['descripcio'].toString().toLowerCase().contains(query);
 
-  List<String> getUbicacions() {
-    final ubicacions = _offerService.ofertes
-        .map((e) => e.ubicacio)
-        .toSet()
-        .toList();
-    ubicacions.sort();
-    return ['Totes', ...ubicacions];
+      final matchUbicacio = ubicacio == null ||
+          ubicacio == 'Totes' ||
+          data['ubicacio'].toString().toLowerCase() == ubicacio.toLowerCase();
+
+      return matchText && matchUbicacio;
+    }).toList();
   }
 
   @override
@@ -56,6 +47,8 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final query = _searchController.text.toLowerCase();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Ofertes disponibles')),
       body: Column(
@@ -71,49 +64,88 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: DropdownButtonFormField<String>(
-              value: _selectedUbicacio ?? 'Totes',
-              decoration: const InputDecoration(
-                labelText: 'Filtrar per ubicació',
-                border: OutlineInputBorder(),
-              ),
-              items: getUbicacions().map((ubicacio) {
-                return DropdownMenuItem(
-                  value: ubicacio,
-                  child: Text(ubicacio),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('ofertes').snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox();
+
+                final ubicacions = snapshot.data!.docs
+                    .map((doc) => (doc.data() as Map<String, dynamic>)['ubicacio'] as String)
+                    .toSet()
+                    .toList()
+                  ..sort();
+
+                return DropdownButtonFormField<String>(
+                  value: _selectedUbicacio ?? 'Totes',
+                  decoration: const InputDecoration(
+                    labelText: 'Filtrar per ubicació',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['Totes', ...ubicacions].map((ubicacio) {
+                    return DropdownMenuItem(
+                      value: ubicacio,
+                      child: Text(ubicacio),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedUbicacio = value;
+                    });
+                  },
                 );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedUbicacio = value;
-                });
-                _onSearch();
               },
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: _filtered.isEmpty
-              ? const Center(child: Text('No hi ha ofertes que coincideixin.'))
-              : ListView.builder(
-                  itemCount: _filtered.length,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('ofertes')
+                  .orderBy('dataPublicacio', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No hi ha cap oferta.'));
+                }
+
+                final filtrades = _filtrarOfertes(
+                  snapshot.data!.docs,
+                  query,
+                  _selectedUbicacio,
+                );
+
+                if (filtrades.isEmpty) {
+                  return const Center(child: Text('No hi ha coincidències.'));
+                }
+
+                return ListView.builder(
+                  itemCount: filtrades.length,
                   itemBuilder: (context, index) {
-                    final oferta = _filtered[index];
+                    final data = filtrades[index].data() as Map<String, dynamic>;
+                    final id = filtrades[index].id;
+
                     return ListTile(
-                      title: Text(oferta.titol),
-                      subtitle: Text('${oferta.empresa} - ${oferta.ubicacio}'),
+                      title: Text(data['titol'] ?? ''),
+                      subtitle: Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
                       onTap: () {
                         Navigator.pushNamed(
                           context,
                           AppRoutes.detallOferta,
-                          arguments: oferta.id,
+                          arguments: id,
                         );
                       },
                     );
                   },
-                ),
+                );
+              },
+            ),
           ),
         ],
       ),
