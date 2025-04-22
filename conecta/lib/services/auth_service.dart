@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/usuari.dart';
@@ -5,6 +6,7 @@ import '../models/usuari.dart';
 class AuthService with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   Usuari? _usuariActual;
+  StreamSubscription<DocumentSnapshot>? _usuariListener;
 
   Usuari? get usuariActual => _usuariActual;
 
@@ -20,7 +22,7 @@ class AuthService with ChangeNotifier {
       'email': usuari.email,
       'rol': usuari.rol.name,
       'descripcio': usuari.descripcio ?? '',
-    });
+    }, SetOptions(merge: true));
   }
 
   Future<Usuari?> carregarUsuariFirestore(String id) async {
@@ -36,6 +38,25 @@ class AuthService with ChangeNotifier {
       rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
       descripcio: data['descripcio'],
     );
+  }
+
+  void listenCanvisUsuari(String userId) {
+    _usuariListener?.cancel(); // cancel·lem el listener anterior si hi era
+
+    _usuariListener = _db.collection('usuaris').doc(userId).snapshots().listen((snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data()!;
+        _usuariActual = Usuari(
+          id: data['id'],
+          nom: data['nom'],
+          email: data['email'],
+          contrasenya: '',
+          rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
+          descripcio: data['descripcio'],
+        );
+        notifyListeners();
+      }
+    });
   }
 
   Future<bool> registre(String nom, String email, String contrasenya, RolUsuari rol) async {
@@ -58,6 +79,7 @@ class AuthService with ChangeNotifier {
 
     await desarUsuariFirestore(nouUsuari);
     _usuariActual = nouUsuari;
+    listenCanvisUsuari(nouUsuari.id);
     notifyListeners();
     return true;
   }
@@ -82,11 +104,13 @@ class AuthService with ChangeNotifier {
     );
 
     _usuariActual = usuari;
+    listenCanvisUsuari(usuari.id);
     notifyListeners();
     return true;
   }
 
   void logout() {
+    _usuariListener?.cancel();
     _usuariActual = null;
     notifyListeners();
   }
