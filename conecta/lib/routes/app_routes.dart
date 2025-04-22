@@ -6,29 +6,30 @@ import '../screens/home_empresa/home_empresa_screen.dart';
 import '../screens/perfil/perfil_screen.dart';
 import '../screens/ofertes/list_ofertes_screen.dart';
 import '../screens/ofertes/detail_oferta_screen.dart';
+import '../screens/ofertes/crear_oferta_screen.dart'; // ✅ Importa la pantalla de creació
 
 class AppRoutes {
-  // Rutas existentes
+  // Rutes existents
   static const String login = '/login';
   static const String register = '/register';
   static const String homeEstudiant = '/home_estudiant';
   static const String homeEmpresa = '/home_empresa';
   static const String perfil = '/perfil';
-  
-  // Nuevas rutas para ofertas
+
+  // Rutes d'ofertes
   static const String llistatOfertes = '/ofertes';
   static const String detallOferta = '/ofertes/detall';
+  static const String crearOferta = '/crear-oferta'; // ✅ Nova ruta
 
   static final Map<String, WidgetBuilder> routes = {
-    // Rutas existentes
     login: (context) => LoginScreen(),
     register: (context) => RegisterScreen(),
     homeEstudiant: (context) => HomeEstudiantScreen(),
     homeEmpresa: (context) => HomeEmpresaScreen(),
     perfil: (context) => PerfilScreen(),
-    
-    // Nuevas rutas
+
     llistatOfertes: (context) => ListOfertesScreen(),
     detallOferta: (context) => DetailOfertaScreen(),
+    crearOferta: (context) => CrearOfertaScreen(), // ✅ Associem la ruta
   };
 }
