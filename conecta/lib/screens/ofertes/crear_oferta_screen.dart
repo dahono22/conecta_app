@@ -42,7 +42,7 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error en crear l\'oferta: \$e')),
+        SnackBar(content: Text('Error en crear l\'oferta: $e')),
       );
     }
   }
