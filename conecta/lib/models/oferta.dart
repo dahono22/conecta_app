@@ -1,9 +1,9 @@
-// lib/models/oferta.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Oferta {
   final String id;
   final String empresaId;
+  final String empresa; // nou camp
   final String titol;
   final String descripcio;
   final String requisits;
@@ -14,6 +14,7 @@ class Oferta {
   Oferta({
     required this.id,
     required this.empresaId,
+    required this.empresa,
     required this.titol,
     required this.descripcio,
     required this.requisits,
@@ -26,6 +27,7 @@ class Oferta {
     return Oferta(
       id: id,
       empresaId: data['empresaId'] ?? '',
+      empresa: data['empresa'] ?? '',
       titol: data['titol'] ?? '',
       descripcio: data['descripcio'] ?? '',
       requisits: data['requisits'] ?? '',
@@ -38,6 +40,7 @@ class Oferta {
   Map<String, dynamic> toMap() {
     return {
       'empresaId': empresaId,
+      'empresa': empresa,
       'titol': titol,
       'descripcio': descripcio,
       'requisits': requisits,
