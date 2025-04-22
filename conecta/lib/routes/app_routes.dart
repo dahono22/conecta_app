@@ -6,7 +6,8 @@ import '../screens/home_empresa/home_empresa_screen.dart';
 import '../screens/perfil/perfil_screen.dart';
 import '../screens/ofertes/list_ofertes_screen.dart';
 import '../screens/ofertes/detail_oferta_screen.dart';
-import '../screens/ofertes/crear_oferta_screen.dart'; // ✅ Importa la pantalla de creació
+import '../screens/ofertes/crear_oferta_screen.dart';
+import '../screens/ofertes/meves_ofertes_screen.dart'; // ✅ Nova importació
 
 class AppRoutes {
   // Rutes existents
@@ -19,7 +20,8 @@ class AppRoutes {
   // Rutes d'ofertes
   static const String llistatOfertes = '/ofertes';
   static const String detallOferta = '/ofertes/detall';
-  static const String crearOferta = '/crear-oferta'; // ✅ Nova ruta
+  static const String crearOferta = '/crear-oferta';
+  static const String mevesOfertes = '/meves-ofertes'; // ✅ Nova ruta
 
   static final Map<String, WidgetBuilder> routes = {
     login: (context) => LoginScreen(),
@@ -27,9 +29,9 @@ class AppRoutes {
     homeEstudiant: (context) => HomeEstudiantScreen(),
     homeEmpresa: (context) => HomeEmpresaScreen(),
     perfil: (context) => PerfilScreen(),
-
     llistatOfertes: (context) => ListOfertesScreen(),
     detallOferta: (context) => DetailOfertaScreen(),
-    crearOferta: (context) => CrearOfertaScreen(), // ✅ Associem la ruta
+    crearOferta: (context) => CrearOfertaScreen(),
+    mevesOfertes: (context) => MevesOfertesScreen(), // ✅ Associada
   };
 }
