@@ -1,9 +1,9 @@
-// ✅ DETAIL_OFERTA_SCREEN CORREGIT (BEMEN3-7.2 amb gestió d'errors)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/offer_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/offer_application_service.dart';
 import '../../services/auth_service.dart';
+import '../../models/usuari.dart';
 
 class DetailOfertaScreen extends StatelessWidget {
   const DetailOfertaScreen({super.key});
@@ -16,9 +16,9 @@ class DetailOfertaScreen extends StatelessWidget {
     final applicationService =
         Provider.of<OfferApplicationService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
-    final userId = authService.usuariActual?.id;
+    final usuari = authService.usuariActual;
 
-    if (userId == null) {
+    if (usuari == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("No s'ha pogut identificar l'usuari.")),
@@ -28,7 +28,7 @@ class DetailOfertaScreen extends StatelessWidget {
     }
 
     final jaAplicada = await applicationService.jaAplicadaFirestore(
-      usuariId: userId,
+      usuariId: usuari.id,
       ofertaId: idOferta,
     );
 
@@ -62,15 +62,15 @@ class DetailOfertaScreen extends StatelessWidget {
                             try {
                               applicationService.setLoading(true);
                               await applicationService.aplicarAOferta(
-                                userId,
+                                usuari.id,
                                 idOferta,
+                                cvUrl: usuari.cvUrl,
                               );
                               if (!context.mounted) return;
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                      Text('Has aplicat correctament.'),
+                                  content: Text('Has aplicat correctament.'),
                                   duration: Duration(seconds: 2),
                                 ),
                               );
@@ -93,8 +93,7 @@ class DetailOfertaScreen extends StatelessWidget {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Confirmar'),
                   ),
@@ -110,62 +109,73 @@ class DetailOfertaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ofertaId = ModalRoute.of(context)!.settings.arguments as String;
-    final oferta = Provider.of<OfferService>(context).getOfertaPerId(ofertaId);
-
-    if (oferta == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Detall')),
-        body: const Center(child: Text('Oferta no trobada.')),
-      );
-    }
 
     return Scaffold(
-      appBar: AppBar(title: Text(oferta.titol)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Empresa: ${oferta.empresa}',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text('Ubicació: ${oferta.ubicacio}'),
-            const SizedBox(height: 16),
-            Text('Descripció:',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text(oferta.descripcio),
-            const Spacer(),
-            Center(
-              child: Consumer<OfferApplicationService>(
-                builder: (context, applicationService, _) {
-                  final aplicada = applicationService.jaAplicada(oferta.id);
-                  return aplicada
-                      ? const Column(
-                          children: [
-                            Icon(Icons.check_circle,
-                                color: Colors.green, size: 48),
-                            SizedBox(height: 8),
-                            Text('Ja has aplicat a aquesta oferta',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.grey)),
-                          ],
-                        )
-                      : ElevatedButton.icon(
-                          icon: const Icon(Icons.send),
-                          label: const Text('Aplicar'),
-                          onPressed: () => _mostrarDialogAplicacio(
-                            context,
-                            oferta.id,
-                            oferta.titol,
-                          ),
-                        );
-                },
-              ),
+      appBar: AppBar(title: const Text('Detall de l\'oferta')),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('ofertes')
+            .doc(ofertaId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('Oferta no trobada.'));
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Empresa: ${data['empresa']}',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text('Ubicació: ${data['ubicacio']}'),
+                const SizedBox(height: 16),
+                Text('Descripció:',
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Text(data['descripcio']),
+                const Spacer(),
+                Center(
+                  child: Consumer<OfferApplicationService>(
+                    builder: (context, applicationService, _) {
+                      final aplicada =
+                          applicationService.jaAplicada(ofertaId);
+                      return aplicada
+                          ? const Column(
+                              children: [
+                                Icon(Icons.check_circle,
+                                    color: Colors.green, size: 48),
+                                SizedBox(height: 8),
+                                Text('Ja has aplicat a aquesta oferta',
+                                    style: TextStyle(
+                                        fontSize: 16, color: Colors.grey)),
+                              ],
+                            )
+                          : ElevatedButton.icon(
+                              icon: const Icon(Icons.send),
+                              label: const Text('Aplicar'),
+                              onPressed: () => _mostrarDialogAplicacio(
+                                context,
+                                ofertaId,
+                                data['titol'],
+                              ),
+                            );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
