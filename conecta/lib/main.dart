@@ -18,7 +18,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
-        Provider(create: (_) => OfferService()),
+ChangeNotifierProvider(create: (_) => OfferService()),
         ChangeNotifierProvider(create: (_) => OfferApplicationService()),
       ],
       child: const ConectaApp(),
