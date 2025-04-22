@@ -7,6 +7,46 @@ import '../../services/auth_service.dart';
 class MevesOfertesScreen extends StatelessWidget {
   const MevesOfertesScreen({super.key});
 
+  void _confirmarEliminacio(BuildContext context, String ofertaId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar oferta'),
+        content: const Text('Estàs segur que vols eliminar aquesta oferta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel·lar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context); // Tancar el diàleg
+              try {
+                await FirebaseFirestore.instance
+                    .collection('ofertes')
+                    .doc(ofertaId)
+                    .delete();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Oferta eliminada correctament.')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error en eliminar l\'oferta: $e')),
+                );
+              }
+            },
+            icon: const Icon(Icons.delete),
+            label: const Text('Eliminar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final usuari = context.read<AuthService>().usuariActual;
@@ -23,7 +63,6 @@ class MevesOfertesScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('ofertes')
             .where('empresaId', isEqualTo: usuari.id)
-            .orderBy('dataPublicacio', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -39,16 +78,18 @@ class MevesOfertesScreen extends StatelessWidget {
           return ListView.builder(
             itemCount: ofertes.length,
             itemBuilder: (context, index) {
-              final data = ofertes[index].data() as Map<String, dynamic>;
+              final doc = ofertes[index];
+              final data = doc.data() as Map<String, dynamic>;
 
               return Card(
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
                   title: Text(data['titol'] ?? 'Sense títol'),
                   subtitle: Text('Ubicació: ${data['ubicacio'] ?? 'Desconeguda'}'),
-                  trailing: Text(
-                    data['estat']?.toUpperCase() ?? 'PENDENT',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    tooltip: 'Eliminar oferta',
+                    onPressed: () => _confirmarEliminacio(context, doc.id),
                   ),
                 ),
               );
