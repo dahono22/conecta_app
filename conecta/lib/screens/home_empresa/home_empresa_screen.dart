@@ -10,10 +10,15 @@ class HomeEmpresaScreen extends StatelessWidget {
     final authService = Provider.of<AuthService>(context, listen: false);
     authService.logout();
     Navigator.pushNamedAndRemoveUntil(
-      context, 
-      AppRoutes.login, 
-      (route) => false
+      context,
+      AppRoutes.login,
+      (route) => false,
     );
+  }
+
+  void _crearOferta(BuildContext context) {
+    // Aquesta funció simplement navega a la nova pantalla de creació d'ofertes
+    Navigator.pushNamed(context, '/crear-oferta');
   }
 
   @override
@@ -38,6 +43,12 @@ class HomeEmpresaScreen extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.pushNamed(context, AppRoutes.perfil),
               child: const Text('Veure perfil'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _crearOferta(context),
+              icon: const Icon(Icons.add_business),
+              label: const Text('Publicar nova oferta'),
             ),
           ],
         ),
