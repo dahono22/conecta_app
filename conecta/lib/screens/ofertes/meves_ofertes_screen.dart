@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
+import 'aplicacions_oferta_screen.dart';
+import 'editar_oferta_screen.dart'; // ✅ Importem la nova pantalla
 
 class MevesOfertesScreen extends StatelessWidget {
   const MevesOfertesScreen({super.key});
@@ -20,7 +22,7 @@ class MevesOfertesScreen extends StatelessWidget {
           ),
           ElevatedButton.icon(
             onPressed: () async {
-              Navigator.pop(context); // Tancar el diàleg
+              Navigator.pop(context);
               try {
                 await FirebaseFirestore.instance
                     .collection('ofertes')
@@ -38,9 +40,7 @@ class MevesOfertesScreen extends StatelessWidget {
             },
             icon: const Icon(Icons.delete),
             label: const Text('Eliminar'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
           ),
         ],
       ),
@@ -86,11 +86,39 @@ class MevesOfertesScreen extends StatelessWidget {
                 child: ListTile(
                   title: Text(data['titol'] ?? 'Sense títol'),
                   subtitle: Text('Ubicació: ${data['ubicacio'] ?? 'Desconeguda'}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    tooltip: 'Eliminar oferta',
-                    onPressed: () => _confirmarEliminacio(context, doc.id),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        tooltip: 'Editar oferta',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditarOfertaScreen(
+                                ofertaId: doc.id,
+                                data: data,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Eliminar oferta',
+                        onPressed: () => _confirmarEliminacio(context, doc.id),
+                      ),
+                    ],
                   ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AplicacionsOfertaScreen(ofertaId: doc.id),
+                      ),
+                    );
+                  },
                 ),
               );
             },
