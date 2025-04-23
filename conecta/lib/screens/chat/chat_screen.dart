@@ -63,9 +63,16 @@ class _ChatScreenState extends State<ChatScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream: _missatgesStream(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                if (snapshot.hasError) {
+  print('🔥 Error carregant missatges: ${snapshot.error}');
+  return Center(
+    child: Text('Error carregant dades. Consulta la terminal.'),
+  );
+}
+
+if (!snapshot.hasData) {
+  return const Center(child: CircularProgressIndicator());
+}
 
                 final missatges = snapshot.data!.docs;
 
