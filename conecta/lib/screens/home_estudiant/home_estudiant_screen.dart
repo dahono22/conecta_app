@@ -25,33 +25,64 @@ class HomeEstudiantScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FA),
       appBar: AppBar(
         title: const Text('Home Estudiant'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
         actions: [
           IconButton(
             onPressed: () => _logout(context),
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
             tooltip: 'Tancar sessió',
           ),
         ],
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Benvingut, Estudiant!'),
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.perfil),
-              child: const Text('Veure perfil'),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.llistatOfertes),
-              child: const Text('Veure Ofertes'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Benvingut, Estudiant!',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.perfil),
+                icon: const Icon(Icons.person),
+                label: const Text('Veure perfil'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.llistatOfertes),
+                icon: const Icon(Icons.search),
+                label: const Text('Veure Ofertes'),
+              ),
+            ],
+          ),
         ),
       ),
     );
