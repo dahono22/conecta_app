@@ -13,9 +13,8 @@ class AplicacionsOfertaScreen extends StatelessWidget {
         .where('ofertaId', isEqualTo: ofertaId)
         .get();
 
-    final List<String> usuariIds = snapshot.docs
-        .map((doc) => doc['usuariId'] as String)
-        .toList();
+    final List<String> usuariIds =
+        snapshot.docs.map((doc) => doc['usuariId'] as String).toList();
 
     if (usuariIds.isEmpty) return [];
 
@@ -48,7 +47,13 @@ class AplicacionsOfertaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Estudiants aplicats')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('Estudiants aplicats'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _carregarEstudiants(),
         builder: (context, snapshot) {
@@ -59,10 +64,20 @@ class AplicacionsOfertaScreen extends StatelessWidget {
           final estudiants = snapshot.data ?? [];
 
           if (estudiants.isEmpty) {
-            return const Center(child: Text('Encara no hi ha aplicacions.'));
+            return const Center(
+              child: Text(
+                'Encara no hi ha aplicacions.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             itemCount: estudiants.length,
             itemBuilder: (context, index) {
               final est = estudiants[index];
@@ -71,10 +86,22 @@ class AplicacionsOfertaScreen extends StatelessWidget {
               final cvUrl = est['cvUrl'];
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 8),
                 child: ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(nom),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  leading: const Icon(Icons.person, size: 32),
+                  title: Text(
+                    nom,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
                   subtitle: Text(email),
                   trailing: cvUrl != null && cvUrl.toString().isNotEmpty
                       ? IconButton(
@@ -82,7 +109,14 @@ class AplicacionsOfertaScreen extends StatelessWidget {
                           tooltip: 'Veure CV',
                           onPressed: () => _obrirCV(context, cvUrl),
                         )
-                      : const Text('Sense CV'),
+                      : const Text(
+                          'Sense CV',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
+                        ),
                 ),
               );
             },
