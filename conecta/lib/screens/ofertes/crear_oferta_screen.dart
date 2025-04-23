@@ -16,9 +16,12 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
   final _descripcioController = TextEditingController();
   final _requisitsController = TextEditingController();
   final _ubicacioController = TextEditingController();
+  bool _isSubmitting = false;
 
   Future<void> _crearOferta() async {
     if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
 
     final authService = Provider.of<AuthService>(context, listen: false);
     final offerService = Provider.of<OfferService>(context, listen: false);
@@ -44,6 +47,8 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error en crear l\'oferta: $e')),
       );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -59,14 +64,20 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
             children: [
               TextFormField(
                 controller: _titolController,
-                decoration: const InputDecoration(labelText: 'Títol'),
+                decoration: const InputDecoration(
+                  labelText: 'Títol',
+                  errorStyle: TextStyle(color: Colors.red),
+                ),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descripcioController,
-                decoration: const InputDecoration(labelText: 'Descripció'),
+                decoration: const InputDecoration(
+                  labelText: 'Descripció',
+                  errorStyle: TextStyle(color: Colors.red),
+                ),
                 maxLines: 4,
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
@@ -83,9 +94,19 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
                 decoration: const InputDecoration(labelText: 'Ubicació'),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _crearOferta,
-                child: const Text('Publicar oferta'),
+              ElevatedButton.icon(
+                onPressed: _isSubmitting ? null : _crearOferta,
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.send),
+                label: Text(_isSubmitting ? 'Publicant...' : 'Publicar oferta'),
               ),
             ],
           ),
