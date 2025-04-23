@@ -34,6 +34,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
         : Future.value();
   }
 
+  InputDecoration _inputDecoration(String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+      errorStyle: const TextStyle(color: Colors.redAccent),
+    );
+  }
+
   Widget _buildOfertesAplicadesFirestore(BuildContext context, List<String> ofertaIds) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -61,6 +73,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ...docs.map((doc) {
               final data = doc.data() as Map<String, dynamic>;
               return Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
@@ -93,38 +106,44 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final isEmpresa = usuari.rol == RolUsuari.empresa;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('El meu perfil')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('El meu perfil'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               Text(
                 isEmpresa ? 'Perfil de l\'empresa' : 'Perfil de l\'estudiant',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 24),
               TextFormField(
                 controller: _controller.nomController,
-                decoration: const InputDecoration(labelText: 'Nom complet'),
+                decoration: _inputDecoration('Nom complet'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _controller.emailController,
-                decoration: const InputDecoration(labelText: 'Correu electrònic'),
+                decoration: _inputDecoration('Correu electrònic'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               if (isEmpresa) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _controller.descripcioController,
-                  decoration: const InputDecoration(
-                    labelText: 'Descripció de l\'empresa',
-                    hintText: 'Ex: Som una startup dedicada a...',
+                  decoration: _inputDecoration(
+                    'Descripció de l\'empresa',
+                    hint: 'Ex: Som una startup dedicada a...',
                   ),
                   maxLines: 3,
                 ),
@@ -136,21 +155,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ],
               if (!isEmpresa) ...[
                 const SizedBox(height: 24),
-                const Text('Currículum (enllaç URL):', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Currículum (enllaç URL):',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _controller.cvUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'Enllaç al CV (Drive, Dropbox...)',
-                    hintText: 'https://...',
+                  decoration: _inputDecoration(
+                    'Enllaç al CV (Drive, Dropbox...)',
+                    hint: 'https://...',
                   ),
                   keyboardType: TextInputType.url,
                   validator: (value) {
-                    if (value != null && value.isNotEmpty && !Uri.tryParse(value)!.hasAbsolutePath) {
-                      return 'L\'enllaç no és vàlid.';
-                    }
-                    return null;
-                  },
+  if (value != null && value.isNotEmpty) {
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasAbsolutePath) {
+      return 'L\'enllaç no és vàlid.';
+    }
+  }
+  return null;
+},
                 ),
                 const SizedBox(height: 12),
                 if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
@@ -183,7 +206,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     } else {
-                      final ids = context.read<OfferApplicationService>().idsAplicades;
+                      final ids =
+                          context.read<OfferApplicationService>().idsAplicades;
                       if (ids.isEmpty) {
                         return const Text('Encara no has aplicat a cap oferta.');
                       }
@@ -193,9 +217,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () => _controller.guardarCanvis(_formKey),
-                child: const Text('Desar canvis'),
+                icon: const Icon(Icons.save),
+                label: const Text('Desar canvis'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
               ),
             ],
           ),
