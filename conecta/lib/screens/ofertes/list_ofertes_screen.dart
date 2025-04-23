@@ -26,15 +26,12 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
   ) {
     return ofertes.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
-
       final matchText = query.isEmpty ||
           data['titol'].toString().toLowerCase().contains(query) ||
           data['descripcio'].toString().toLowerCase().contains(query);
-
       final matchUbicacio = ubicacio == null ||
           ubicacio == 'Totes' ||
           data['ubicacio'].toString().toLowerCase() == ubicacio.toLowerCase();
-
       return matchText && matchUbicacio;
     }).toList();
   }
@@ -50,23 +47,33 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
     final query = _searchController.text.toLowerCase();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ofertes disponibles')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('Ofertes disponibles'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Buscar per paraula clau',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('ofertes').snapshots(),
               builder: (context, snapshot) {
@@ -80,9 +87,14 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
 
                 return DropdownButtonFormField<String>(
                   value: _selectedUbicacio ?? 'Totes',
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Filtrar per ubicació',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   items: ['Totes', ...ubicacions].map((ubicacio) {
                     return DropdownMenuItem(
@@ -131,16 +143,27 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                     final data = filtrades[index].data() as Map<String, dynamic>;
                     final id = filtrades[index].id;
 
-                    return ListTile(
-                      title: Text(data['titol'] ?? ''),
-                      subtitle: Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.detallOferta,
-                          arguments: id,
-                        );
-                      },
+                    return Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        title: Text(
+                          data['titol'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.detallOferta,
+                            arguments: id,
+                          );
+                        },
+                      ),
                     );
                   },
                 );
