@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../routes/app_routes.dart';
+import '../chat/converses_empresa_screen.dart'; // ✅ Nou import
 
 class HomeEmpresaScreen extends StatelessWidget {
   const HomeEmpresaScreen({super.key});
@@ -22,6 +23,15 @@ class HomeEmpresaScreen extends StatelessWidget {
 
   void _veureMevesOfertes(BuildContext context) {
     Navigator.pushNamed(context, AppRoutes.mevesOfertes);
+  }
+
+  void _veureConverses(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ConversesEmpresaScreen(),
+      ),
+    );
   }
 
   @override
@@ -96,6 +106,20 @@ class HomeEmpresaScreen extends StatelessWidget {
                 onPressed: () => _veureMevesOfertes(context),
                 icon: const Icon(Icons.list),
                 label: const Text('Veure les meves ofertes'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.indigoAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => _veureConverses(context),
+                icon: const Icon(Icons.chat),
+                label: const Text('Converses actives'),
               ),
             ],
           ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/offer_application_service.dart';
 import '../../routes/app_routes.dart';
+import '../chat/converses_alumne_screen.dart'; // ✅ Nou import
 
 class HomeEstudiantScreen extends StatelessWidget {
   const HomeEstudiantScreen({super.key});
@@ -19,6 +20,15 @@ class HomeEstudiantScreen extends StatelessWidget {
       context,
       AppRoutes.login,
       (route) => false,
+    );
+  }
+
+  void _veureConverses(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ConversesAlumneScreen(),
+      ),
     );
   }
 
@@ -80,6 +90,20 @@ class HomeEstudiantScreen extends StatelessWidget {
                 onPressed: () => Navigator.pushNamed(context, AppRoutes.llistatOfertes),
                 icon: const Icon(Icons.search),
                 label: const Text('Veure Ofertes'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.indigoAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => _veureConverses(context),
+                icon: const Icon(Icons.chat),
+                label: const Text('Converses actives'),
               ),
             ],
           ),
