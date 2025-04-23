@@ -18,44 +18,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _cvUrlController = TextEditingController();
 
   RolUsuari _rol = RolUsuari.estudiant;
+  bool _isSubmitting = false;
+
+  InputDecoration _inputDecoration(String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      errorStyle: const TextStyle(color: Colors.redAccent),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Registre')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('Registre'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               TextFormField(
                 controller: _nomController,
-                decoration: const InputDecoration(labelText: 'Nom complet'),
+                decoration: _inputDecoration('Nom complet'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Correu electrònic'),
+                decoration: _inputDecoration('Correu electrònic'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Contrasenya'),
+                decoration: _inputDecoration('Contrasenya'),
                 obscureText: true,
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               DropdownButtonFormField<RolUsuari>(
                 value: _rol,
-                decoration: const InputDecoration(labelText: 'Rol'),
+                decoration: _inputDecoration('Rol'),
                 items: RolUsuari.values.map((rol) {
                   return DropdownMenuItem(
                     value: rol,
@@ -69,49 +90,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               if (_rol == RolUsuari.estudiant) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _cvUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'Enllaç al CV (opcional)',
-                    hintText: 'https://drive.google.com/...',
+                  decoration: _inputDecoration(
+                    'Enllaç al CV (opcional)',
+                    hint: 'https://drive.google.com/...',
                   ),
                   keyboardType: TextInputType.url,
                   validator: (value) {
-                    final uri = Uri.tryParse(value ?? '');
-                    if (value != null && value.isNotEmpty && (uri == null || !uri.hasAbsolutePath)) {
-                      return 'L’enllaç no és vàlid.';
+                    if (value != null && value.isNotEmpty) {
+                      final uri = Uri.tryParse(value);
+                      if (uri == null || !uri.hasAbsolutePath) {
+                        return 'L’enllaç no és vàlid.';
+                      }
                     }
                     return null;
                   },
                 ),
               ],
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () async {
-                  if (!_formKey.currentState!.validate()) return;
+              const SizedBox(height: 28),
+              ElevatedButton.icon(
+                onPressed: _isSubmitting
+                    ? null
+                    : () async {
+                        if (!_formKey.currentState!.validate()) return;
 
-                  final success = await authService.registre(
-                    _nomController.text.trim(),
-                    _emailController.text.trim(),
-                    _passwordController.text.trim(),
-                    _rol,
-                    cvUrl: _rol == RolUsuari.estudiant
-                        ? _cvUrlController.text.trim()
-                        : null,
-                  );
+                        setState(() => _isSubmitting = true);
 
-                  if (!mounted) return;
+                        final success = await authService.registre(
+                          _nomController.text.trim(),
+                          _emailController.text.trim(),
+                          _passwordController.text.trim(),
+                          _rol,
+                          cvUrl: _rol == RolUsuari.estudiant
+                              ? _cvUrlController.text.trim()
+                              : null,
+                        );
 
-                  if (success) {
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Aquest email ja està registrat')),
-                    );
-                  }
-                },
-                child: const Text('Registrar-se'),
+                        if (!mounted) return;
+                        setState(() => _isSubmitting = false);
+
+                        if (success) {
+                          Navigator.of(context).pushReplacementNamed('/login');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Aquest email ja està registrat')),
+                          );
+                        }
+                      },
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.person_add),
+                label: Text(_isSubmitting ? 'Registrant...' : 'Registrar-se'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
               ),
             ],
           ),
