@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../services/auth_service.dart';
+import '../chat/chat_screen.dart';
 
 class AplicacionsOfertaScreen extends StatelessWidget {
   final String ofertaId;
@@ -26,11 +30,45 @@ class AplicacionsOfertaScreen extends StatelessWidget {
     return usuarisSnapshot.docs.map((doc) {
       final data = doc.data();
       return {
+        'id': doc.id,
         'nom': data['nom'],
         'email': data['email'],
         'cvUrl': data['cvUrl'],
       };
     }).toList();
+  }
+
+  Future<void> _iniciarXatPerEmpresa(
+    BuildContext context, {
+    required String ofertaId,
+    required String empresaId,
+    required String alumneId,
+  }) async {
+    final aplicacions = await FirebaseFirestore.instance
+        .collection('aplicacions')
+        .where('ofertaId', isEqualTo: ofertaId)
+        .where('usuariId', isEqualTo: alumneId)
+        .get();
+
+    if (aplicacions.docs.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            ofertaId: ofertaId,
+            empresaId: empresaId,
+            alumneId: alumneId,
+            usuariActualId: empresaId,
+          ),
+        ),
+      );
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Aquest alumne encara no ha aplicat.')),
+        );
+      }
+    }
   }
 
   void _obrirCV(BuildContext context, String url) async {
@@ -46,6 +84,9 @@ class AplicacionsOfertaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final empresa = Provider.of<AuthService>(context, listen: false).usuariActual;
+    final empresaId = empresa?.id ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
       appBar: AppBar(
@@ -84,6 +125,7 @@ class AplicacionsOfertaScreen extends StatelessWidget {
               final nom = est['nom'] ?? 'Nom desconegut';
               final email = est['email'] ?? 'Email desconegut';
               final cvUrl = est['cvUrl'];
+              final alumneId = est['id'] ?? '';
 
               return Card(
                 shape: RoundedRectangleBorder(
@@ -103,20 +145,27 @@ class AplicacionsOfertaScreen extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(email),
-                  trailing: cvUrl != null && cvUrl.toString().isNotEmpty
-                      ? IconButton(
+                  trailing: Wrap(
+                    spacing: 4,
+                    children: [
+                      if (cvUrl != null && cvUrl.toString().isNotEmpty)
+                        IconButton(
                           icon: const Icon(Icons.visibility),
                           tooltip: 'Veure CV',
                           onPressed: () => _obrirCV(context, cvUrl),
-                        )
-                      : const Text(
-                          'Sense CV',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
                         ),
+                      IconButton(
+                        icon: const Icon(Icons.chat, color: Colors.blueAccent),
+                        tooltip: 'Iniciar xat',
+                        onPressed: () => _iniciarXatPerEmpresa(
+                          context,
+                          ofertaId: ofertaId,
+                          empresaId: empresaId,
+                          alumneId: alumneId,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
