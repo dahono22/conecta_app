@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../services/auth_service.dart';
 import 'aplicacions_oferta_screen.dart';
-import 'editar_oferta_screen.dart'; // ✅ Importem la nova pantalla
+import 'editar_oferta_screen.dart';
 
 class MevesOfertesScreen extends StatelessWidget {
   const MevesOfertesScreen({super.key});
@@ -13,6 +12,7 @@ class MevesOfertesScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Eliminar oferta'),
         content: const Text('Estàs segur que vols eliminar aquesta oferta?'),
         actions: [
@@ -40,7 +40,11 @@ class MevesOfertesScreen extends StatelessWidget {
             },
             icon: const Icon(Icons.delete),
             label: const Text('Eliminar'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ],
       ),
@@ -58,7 +62,13 @@ class MevesOfertesScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Les meves ofertes')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('Les meves ofertes'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('ofertes')
@@ -70,7 +80,12 @@ class MevesOfertesScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Encara no has publicat cap oferta.'));
+            return const Center(
+              child: Text(
+                'Encara no has publicat cap oferta.',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
           }
 
           final ofertes = snapshot.data!.docs;
@@ -82,15 +97,27 @@ class MevesOfertesScreen extends StatelessWidget {
               final data = doc.data() as Map<String, dynamic>;
 
               return Card(
-                margin: const EdgeInsets.all(8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
-                  title: Text(data['titol'] ?? 'Sense títol'),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  title: Text(
+                    data['titol'] ?? 'Sense títol',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
                   subtitle: Text('Ubicació: ${data['ubicacio'] ?? 'Desconeguda'}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  trailing: Wrap(
+                    spacing: 4,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        icon: const Icon(Icons.edit, color: Colors.blueAccent),
                         tooltip: 'Editar oferta',
                         onPressed: () {
                           Navigator.push(
@@ -105,7 +132,7 @@ class MevesOfertesScreen extends StatelessWidget {
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
+                        icon: const Icon(Icons.delete, color: Colors.redAccent),
                         tooltip: 'Eliminar oferta',
                         onPressed: () => _confirmarEliminacio(context, doc.id),
                       ),
