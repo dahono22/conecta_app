@@ -48,6 +48,9 @@ class DetailOfertaScreen extends StatelessWidget {
           return Consumer<OfferApplicationService>(
             builder: (context, applicationService, _) {
               return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 title: const Text('Confirmar aplicació'),
                 content: Text('Vols aplicar a l\'oferta "$titolOferta"?'),
                 actions: [
@@ -111,7 +114,13 @@ class DetailOfertaScreen extends StatelessWidget {
     final ofertaId = ModalRoute.of(context)!.settings.arguments as String;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detall de l\'oferta')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('Detall de l\'oferta'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('ofertes')
@@ -129,19 +138,32 @@ class DetailOfertaScreen extends StatelessWidget {
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
           return Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Empresa: ${data['empresa']}',
-                    style: Theme.of(context).textTheme.titleMedium),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    )),
                 const SizedBox(height: 8),
-                Text('Ubicació: ${data['ubicacio']}'),
-                const SizedBox(height: 16),
-                Text('Descripció:',
-                    style: Theme.of(context).textTheme.titleSmall),
+                Text('Ubicació: ${data['ubicacio']}',
+                    style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 20),
+                const Text(
+                  'Descripció:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text(data['descripcio']),
+                Text(
+                  data['descripcio'],
+                  style: const TextStyle(fontSize: 15),
+                ),
                 const Spacer(),
                 Center(
                   child: Consumer<OfferApplicationService>(
@@ -154,14 +176,27 @@ class DetailOfertaScreen extends StatelessWidget {
                                 Icon(Icons.check_circle,
                                     color: Colors.green, size: 48),
                                 SizedBox(height: 8),
-                                Text('Ja has aplicat a aquesta oferta',
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.grey)),
+                                Text(
+                                  'Ja has aplicat a aquesta oferta',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ],
                             )
                           : ElevatedButton.icon(
                               icon: const Icon(Icons.send),
                               label: const Text('Aplicar'),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(50),
+                                backgroundColor: Colors.blueAccent,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
                               onPressed: () => _mostrarDialogAplicacio(
                                 context,
                                 ofertaId,
