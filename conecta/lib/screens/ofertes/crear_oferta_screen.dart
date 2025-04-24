@@ -52,48 +52,78 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
     }
   }
 
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.3,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(color: Colors.blueAccent),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(color: Colors.blueAccent),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(color: Colors.green, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nova oferta')),
+      backgroundColor: const Color(0xFFF4F7FA),
+      appBar: AppBar(
+        title: const Text('Nova oferta'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               TextFormField(
                 controller: _titolController,
-                decoration: const InputDecoration(
-                  labelText: 'Títol',
-                  errorStyle: TextStyle(color: Colors.red),
-                ),
+                decoration: _inputDecoration('Títol'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _descripcioController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripció',
-                  errorStyle: TextStyle(color: Colors.red),
-                ),
+                decoration: _inputDecoration('Descripció'),
                 maxLines: 4,
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _requisitsController,
-                decoration: const InputDecoration(labelText: 'Requisits'),
+                decoration: _inputDecoration('Requisits'),
                 maxLines: 3,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _ubicacioController,
-                decoration: const InputDecoration(labelText: 'Ubicació'),
+                decoration: _inputDecoration('Ubicació'),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               ElevatedButton.icon(
                 onPressed: _isSubmitting ? null : _crearOferta,
                 icon: _isSubmitting
@@ -106,7 +136,18 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
                         ),
                       )
                     : const Icon(Icons.send),
-                label: Text(_isSubmitting ? 'Publicant...' : 'Publicar oferta'),
+                label: Text(
+                  _isSubmitting ? 'Publicant...' : 'Publicar oferta',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
               ),
             ],
           ),
