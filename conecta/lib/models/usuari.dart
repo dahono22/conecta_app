@@ -1,16 +1,18 @@
+// Enum per representar el rol de l'usuari dins la plataforma
 enum RolUsuari {
-  estudiant,
-  empresa,
+  estudiant, // Usuari que busca ofertes
+  empresa,   // Usuari que publica ofertes
 }
 
+// Classe que representa un usuari dins l'aplicació
 class Usuari {
-  final String id;
-  final String nom;
-  final String email;
-  final String contrasenya;
-  final RolUsuari rol;
-  final String? descripcio;
-  final String? cvUrl;
+  final String id; // ID únic de l'usuari (Firestore)
+  final String nom; // Nom de l'usuari
+  final String email; // Correu electrònic
+  final String contrasenya; // Contrasenya (nota: per seguretat, no es recomana guardar-la en text pla)
+  final RolUsuari rol; // Rol dins de l'aplicació (estudiant o empresa)
+  final String? descripcio; // Descripció personal o de l'empresa
+  final String? cvUrl; // URL al CV (en el cas d'estudiants)
 
   Usuari({
     required this.id,
@@ -22,6 +24,7 @@ class Usuari {
     this.cvUrl,
   });
 
+  // Mètode per crear una nova instància modificant només alguns camps
   Usuari copyWith({
     String? nom,
     String? email,
@@ -29,11 +32,11 @@ class Usuari {
     String? cvUrl,
   }) {
     return Usuari(
-      id: id,
-      nom: nom ?? this.nom,
-      email: email ?? this.email,
-      contrasenya: contrasenya,
-      rol: rol,
+      id: id, // Manté l'ID original
+      nom: nom ?? this.nom, // Nom nou si s'especifica, sinó manté l'actual
+      email: email ?? this.email, // Idem amb el correu
+      contrasenya: contrasenya, // Manté la contrasenya actual (no permet modificar-la aquí)
+      rol: rol, // Manté el rol actual
       descripcio: descripcio ?? this.descripcio,
       cvUrl: cvUrl ?? this.cvUrl,
     );

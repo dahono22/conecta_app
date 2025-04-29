@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import 'chat_screen.dart';
 
+// Pantalla que mostra totes les converses actives de l'alumne actual
 class ConversesAlumneScreen extends StatelessWidget {
   const ConversesAlumneScreen({super.key});
 
+  // Funció auxiliar per obtenir el nom de l'empresa donat el seu ID
   Future<String> _getNomEmpresa(String empresaId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('usuaris')
@@ -17,14 +19,14 @@ class ConversesAlumneScreen extends StatelessWidget {
       final data = snapshot.data();
       return data?['nom'] ?? 'Empresa desconeguda';
     } else {
-      return 'Empresa eliminada';
+      return 'Empresa eliminada'; // En cas que l'empresa s'hagi eliminat
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final alumne = Provider.of<AuthService>(context).usuariActual;
-    final alumneId = alumne?.id ?? '';
+    final alumne = Provider.of<AuthService>(context).usuariActual; // Obté l'usuari actual
+    final alumneId = alumne?.id ?? ''; // ID de l'alumne
 
     return Scaffold(
       appBar: AppBar(
@@ -37,8 +39,8 @@ class ConversesAlumneScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('missatges_xat')
-            .where('alumneId', isEqualTo: alumneId)
-            .orderBy('timestamp', descending: true)
+            .where('alumneId', isEqualTo: alumneId) // Filtra per alumne
+            .orderBy('timestamp', descending: true) // Ordre cronològic invers
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -52,14 +54,16 @@ class ConversesAlumneScreen extends StatelessWidget {
 
           final missatges = snapshot.data!.docs;
 
+          // Agrupació de missatges per conversa (per oferta + empresa)
           final Map<String, Map<String, dynamic>> conversesMap = {};
 
           for (final doc in missatges) {
             final data = doc.data() as Map<String, dynamic>;
-            if (data['timestamp'] == null) continue;
+            if (data['timestamp'] == null) continue; // Evita entrades incompletes
 
             final key = '${data['ofertaId']}_${data['empresaId']}';
 
+            // Guarda només el primer missatge més recent per cada conversa
             if (!conversesMap.containsKey(key)) {
               conversesMap[key] = {
                 'ofertaId': data['ofertaId'],
@@ -76,6 +80,7 @@ class ConversesAlumneScreen extends StatelessWidget {
             return const Center(child: Text('Encara no tens cap conversa.'));
           }
 
+          // Mostra la llista de converses agrupades
           return ListView.builder(
             itemCount: converses.length,
             itemBuilder: (context, index) {
@@ -84,6 +89,7 @@ class ConversesAlumneScreen extends StatelessWidget {
               final empresaId = conv['empresaId'];
               final text = conv['text'];
 
+              // Per cada conversa, es busca el nom de l'empresa
               return FutureBuilder<String>(
                 future: _getNomEmpresa(empresaId),
                 builder: (context, snapshot) {
@@ -107,9 +113,10 @@ class ConversesAlumneScreen extends StatelessWidget {
                       subtitle: Text(
                         text ?? '',
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        overflow: TextOverflow.ellipsis, // Només una línia amb punts suspensius
                       ),
                       onTap: () {
+                        // Navegació cap a la pantalla de xat
                         Navigator.push(
                           context,
                           MaterialPageRoute(

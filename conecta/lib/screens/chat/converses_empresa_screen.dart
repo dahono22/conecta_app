@@ -95,7 +95,7 @@ class ConversesEmpresaScreen extends StatelessWidget {
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                          horizontal: 16, vertical: 12), 
                       title: Text(
                         'Conversa amb $nomAlumne',
                         style: const TextStyle(fontWeight: FontWeight.w600),
