@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../services/auth_service.dart';
 import '../../routes/app_routes.dart';
-import '../chat/converses_empresa_screen.dart'; // ✅ Nou import
+import '../chat/converses_empresa_screen.dart';
 
 class HomeEmpresaScreen extends StatelessWidget {
   const HomeEmpresaScreen({super.key});
@@ -36,29 +36,29 @@ class HomeEmpresaScreen extends StatelessWidget {
     );
   }
 
-  Future<Map<String, int>> _carregarEstadistiques(String empresaId) async {
-    final ofertesSnapshot = await FirebaseFirestore.instance
+  Stream<Map<String, int>> _estadistiquesStream(String empresaId) {
+    final ofertesRef = FirebaseFirestore.instance
         .collection('ofertes')
-        .where('empresaId', isEqualTo: empresaId)
-        .get();
+        .where('empresaId', isEqualTo: empresaId);
 
-    int totalOfertes = ofertesSnapshot.docs.length;
+    return ofertesRef.snapshots().asyncMap((ofertesSnapshot) async {
+      final totalOfertes = ofertesSnapshot.docs.length;
+      final ofertaIds = ofertesSnapshot.docs.map((doc) => doc.id).toList();
 
-    final ofertaIds = ofertesSnapshot.docs.map((doc) => doc.id).toList();
+      int totalAplicacions = 0;
+      if (ofertaIds.isNotEmpty) {
+        final aplicacionsSnapshot = await FirebaseFirestore.instance
+            .collection('aplicacions')
+            .where('ofertaId', whereIn: ofertaIds)
+            .get();
+        totalAplicacions = aplicacionsSnapshot.docs.length;
+      }
 
-    int totalAplicacions = 0;
-    if (ofertaIds.isNotEmpty) {
-      final aplicacionsSnapshot = await FirebaseFirestore.instance
-          .collection('aplicacions')
-          .where('ofertaId', whereIn: ofertaIds)
-          .get();
-      totalAplicacions = aplicacionsSnapshot.docs.length;
-    }
-
-    return {
-      'totalOfertes': totalOfertes,
-      'totalAplicacions': totalAplicacions,
-    };
+      return {
+        'totalOfertes': totalOfertes,
+        'totalAplicacions': totalAplicacions,
+      };
+    });
   }
 
   @override
@@ -81,8 +81,8 @@ class HomeEmpresaScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, int>>(
-        future: _carregarEstadistiques(empresaId),
+      body: StreamBuilder<Map<String, int>>(
+        stream: _estadistiquesStream(empresaId),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
