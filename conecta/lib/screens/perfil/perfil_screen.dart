@@ -47,54 +47,84 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Widget _buildOfertesAplicadesFirestore(BuildContext context, List<String> ofertaIds) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+    final usuariId = context.read<AuthService>().usuariActual!.id;
+
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
           .collection('ofertes')
           .where(FieldPath.documentId, whereIn: ofertaIds)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+          .get(),
+      builder: (context, snapshotOfertes) {
+        if (!snapshotOfertes.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final docs = snapshot.data!.docs;
-        if (docs.isEmpty) {
+        final docsOfertes = snapshotOfertes.data!.docs;
+        if (docsOfertes.isEmpty) {
           return const Text('Encara no has aplicat a cap oferta.');
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Ofertes aplicades:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data['titol'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
-                    ],
-                  ),
+        return FutureBuilder<QuerySnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('aplicacions')
+              .where('usuariId', isEqualTo: usuariId)
+              .get(),
+          builder: (context, snapshotAplicacions) {
+            if (!snapshotAplicacions.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final aplicacions = snapshotAplicacions.data!.docs;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ofertes aplicades:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              );
-            }).toList(),
-          ],
+                const SizedBox(height: 16),
+                ...docsOfertes.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final ofertaId = doc.id;
+
+                  QueryDocumentSnapshot? aplicacio;
+                  try {
+                    aplicacio = aplicacions.firstWhere((a) => a['ofertaId'] == ofertaId);
+                  } catch (_) {
+                    aplicacio = null;
+                  }
+
+                  final estat = (aplicacio?.data() as Map<String, dynamic>?)?['estat'] ?? 'Nou';
+
+                  return Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['titol'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
+                          const SizedBox(height: 4),
+                          Text('Estat de la candidatura: $estat',
+                              style: const TextStyle(color: Colors.blueGrey)),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            );
+          },
         );
       },
     );
@@ -166,14 +196,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   ),
                   keyboardType: TextInputType.url,
                   validator: (value) {
-  if (value != null && value.isNotEmpty) {
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasAbsolutePath) {
-      return 'L\'enllaç no és vàlid.';
-    }
-  }
-  return null;
-},
+                    if (value != null && value.isNotEmpty) {
+                      final uri = Uri.tryParse(value);
+                      if (uri == null || !uri.hasAbsolutePath) {
+                        return 'L\'enllaç no és vàlid.';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
