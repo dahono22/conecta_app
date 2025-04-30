@@ -9,6 +9,7 @@ import '../chat/converses_empresa_screen.dart';
 class HomeEmpresaScreen extends StatelessWidget {
   const HomeEmpresaScreen({super.key});
 
+  // Mètode per tancar sessió de l'empresa i tornar a la pantalla de login
   void _logout(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
     authService.logout();
@@ -19,14 +20,17 @@ class HomeEmpresaScreen extends StatelessWidget {
     );
   }
 
+  // Navegació cap a la pantalla per crear una nova oferta
   void _crearOferta(BuildContext context) {
     Navigator.pushNamed(context, AppRoutes.crearOferta);
   }
 
+  // Navegació cap a la llista d'ofertes publicades per l'empresa
   void _veureMevesOfertes(BuildContext context) {
     Navigator.pushNamed(context, AppRoutes.mevesOfertes);
   }
 
+  // Navegació cap a la pantalla de converses actives amb alumnes
   void _veureConverses(BuildContext context) {
     Navigator.push(
       context,
@@ -36,13 +40,14 @@ class HomeEmpresaScreen extends StatelessWidget {
     );
   }
 
+  // Stream que carrega estadístiques en temps real: ofertes creades i aplicacions rebudes
   Stream<Map<String, int>> _estadistiquesStream(String empresaId) {
     final ofertesRef = FirebaseFirestore.instance
         .collection('ofertes')
         .where('empresaId', isEqualTo: empresaId);
 
     return ofertesRef.snapshots().asyncMap((ofertesSnapshot) async {
-      final totalOfertes = ofertesSnapshot.docs.length;
+      final totalOfertes = ofertesSnapshot.docs.length; // nombre total d'ofertes
       final ofertaIds = ofertesSnapshot.docs.map((doc) => doc.id).toList();
 
       int totalAplicacions = 0;
@@ -51,7 +56,7 @@ class HomeEmpresaScreen extends StatelessWidget {
             .collection('aplicacions')
             .where('ofertaId', whereIn: ofertaIds)
             .get();
-        totalAplicacions = aplicacionsSnapshot.docs.length;
+        totalAplicacions = aplicacionsSnapshot.docs.length; // total de candidatures rebudes
       }
 
       return {
@@ -63,11 +68,11 @@ class HomeEmpresaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final empresa = Provider.of<AuthService>(context).usuariActual;
+    final empresa = Provider.of<AuthService>(context).usuariActual; // Obté l'empresa actual
     final empresaId = empresa?.id ?? '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: const Color(0xFFF4F7FA), // color de fons suau per coherència visual
       appBar: AppBar(
         title: const Text('Home Empresa'),
         elevation: 0,
@@ -75,17 +80,18 @@ class HomeEmpresaScreen extends StatelessWidget {
         foregroundColor: Colors.black87,
         actions: [
           IconButton(
-            onPressed: () => _logout(context),
+            onPressed: () => _logout(context), // tancar sessió
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             tooltip: 'Tancar sessió',
           ),
         ],
       ),
+      // Mostra estadístiques en temps real amb StreamBuilder
       body: StreamBuilder<Map<String, int>>(
         stream: _estadistiquesStream(empresaId),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator()); // carregant...
           }
 
           final stats = snapshot.data!;
@@ -96,6 +102,7 @@ class HomeEmpresaScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Missatge de benvinguda
                   const Text(
                     'Benvinguda, Empresa!',
                     style: TextStyle(
@@ -105,6 +112,7 @@ class HomeEmpresaScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  // Targeta d’estadístiques
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 4,
@@ -120,6 +128,7 @@ class HomeEmpresaScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  // Botó per veure el perfil de l’empresa
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -134,6 +143,7 @@ class HomeEmpresaScreen extends StatelessWidget {
                     label: const Text('Veure perfil'),
                   ),
                   const SizedBox(height: 16),
+                  // Botó per crear una nova oferta
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -148,6 +158,7 @@ class HomeEmpresaScreen extends StatelessWidget {
                     label: const Text('Publicar nova oferta'),
                   ),
                   const SizedBox(height: 16),
+                  // Botó per veure les ofertes publicades per l’empresa
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -162,6 +173,7 @@ class HomeEmpresaScreen extends StatelessWidget {
                     label: const Text('Veure les meves ofertes'),
                   ),
                   const SizedBox(height: 16),
+                  // Botó per accedir a les converses actives amb alumnes
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
