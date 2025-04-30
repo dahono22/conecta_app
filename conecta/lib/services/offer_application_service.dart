@@ -34,6 +34,7 @@ class OfferApplicationService with ChangeNotifier {
         'usuariId': userId,
         'ofertaId': idOferta,
         'timestamp': FieldValue.serverTimestamp(),
+        'estat': 'Nou', // ✅ Estat inicial "Nou"
         if (cvUrl != null && cvUrl.isNotEmpty) 'cvUrl': cvUrl,
       });
 
