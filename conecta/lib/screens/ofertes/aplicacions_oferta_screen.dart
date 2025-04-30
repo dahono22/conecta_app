@@ -17,8 +17,7 @@ class AplicacionsOfertaScreen extends StatelessWidget {
         .where('ofertaId', isEqualTo: ofertaId)
         .get();
 
-    final List<String> usuariIds =
-        snapshot.docs.map((doc) => doc['usuariId'] as String).toList();
+    final List<String> usuariIds = snapshot.docs.map((doc) => doc['usuariId'] as String).toList();
 
     if (usuariIds.isEmpty) return [];
 
@@ -27,15 +26,64 @@ class AplicacionsOfertaScreen extends StatelessWidget {
         .where(FieldPath.documentId, whereIn: usuariIds)
         .get();
 
-    return usuarisSnapshot.docs.map((doc) {
-      final data = doc.data();
+    Map<String, Map<String, dynamic>> usuarisData = {
+      for (var doc in usuarisSnapshot.docs) doc.id: doc.data()
+    };
+
+    return snapshot.docs.map((doc) {
+      final usuariId = doc['usuariId'];
+      final usuariData = usuarisData[usuariId] ?? {};
       return {
-        'id': doc.id,
-        'nom': data['nom'],
-        'email': data['email'],
-        'cvUrl': data['cvUrl'],
+        'aplicacioId': doc.id,
+        'usuariId': usuariId,
+        'estat': doc['estat'] ?? 'Nou',
+        'nom': usuariData['nom'],
+        'email': usuariData['email'],
+        'cvUrl': usuariData['cvUrl'],
       };
     }).toList();
+  }
+
+  Future<void> _canviarEstatAplicacio(BuildContext context, String aplicacioId, String nouEstat) async {
+    try {
+      await FirebaseFirestore.instance.collection('aplicacions').doc(aplicacioId).update({
+        'estat': nouEstat,
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Estat actualitzat a "$nouEstat"')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error en actualitzar l\'estat')),
+        );
+      }
+    }
+  }
+
+  Future<void> _mostrarSelectorEstat(BuildContext context, String aplicacioId) async {
+    final estats = ['Nou', 'En procés', 'Acceptat', 'Rebutjat'];
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return ListView(
+          shrinkWrap: true,
+          children: estats.map((estat) {
+            return ListTile(
+              title: Text(estat),
+              onTap: () {
+                Navigator.pop(context);
+                _canviarEstatAplicacio(context, aplicacioId, estat);
+              },
+            );
+          }).toList(),
+        );
+      },
+    );
   }
 
   Future<void> _iniciarXatPerEmpresa(
@@ -125,7 +173,9 @@ class AplicacionsOfertaScreen extends StatelessWidget {
               final nom = est['nom'] ?? 'Nom desconegut';
               final email = est['email'] ?? 'Email desconegut';
               final cvUrl = est['cvUrl'];
-              final alumneId = est['id'] ?? '';
+              final alumneId = est['usuariId'] ?? '';
+              final aplicacioId = est['aplicacioId'] ?? '';
+              final estat = est['estat'] ?? 'Nou';
 
               return Card(
                 shape: RoundedRectangleBorder(
@@ -134,8 +184,7 @@ class AplicacionsOfertaScreen extends StatelessWidget {
                 elevation: 2,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   leading: const Icon(Icons.person, size: 32),
                   title: Text(
                     nom,
@@ -144,10 +193,16 @@ class AplicacionsOfertaScreen extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  subtitle: Text(email),
+                  subtitle: Text('$email\nEstat: $estat'),
+                  isThreeLine: true,
                   trailing: Wrap(
                     spacing: 4,
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        tooltip: 'Canviar estat',
+                        onPressed: () => _mostrarSelectorEstat(context, aplicacioId),
+                      ),
                       if (cvUrl != null && cvUrl.toString().isNotEmpty)
                         IconButton(
                           icon: const Icon(Icons.visibility),
