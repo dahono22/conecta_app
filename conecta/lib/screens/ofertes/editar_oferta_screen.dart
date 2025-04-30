@@ -1,9 +1,11 @@
+// Importació de paquets necessaris
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+// Pantalla amb estat per editar una oferta de treball
 class EditarOfertaScreen extends StatefulWidget {
-  final String ofertaId;
-  final Map<String, dynamic> data;
+  final String ofertaId; // ID de l’oferta a editar
+  final Map<String, dynamic> data; // Dades actuals de l’oferta
 
   const EditarOfertaScreen({
     super.key,
@@ -16,22 +18,27 @@ class EditarOfertaScreen extends StatefulWidget {
 }
 
 class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); // Clau per validar el formulari
+
+  // Controladors de text pels camps del formulari
   late TextEditingController _titolController;
   late TextEditingController _descripcioController;
   late TextEditingController _requisitsController;
   late TextEditingController _ubicacioController;
-  bool _isSaving = false;
+
+  bool _isSaving = false; // Estat per indicar si s’està guardant
 
   @override
   void initState() {
     super.initState();
+    // Inicialització dels controladors amb les dades existents
     _titolController = TextEditingController(text: widget.data['titol']);
     _descripcioController = TextEditingController(text: widget.data['descripcio']);
     _requisitsController = TextEditingController(text: widget.data['requisits']);
     _ubicacioController = TextEditingController(text: widget.data['ubicacio']);
   }
 
+  // Decoració reutilitzable per als inputs
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -49,10 +56,11 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
     );
   }
 
+  // Funció per actualitzar les dades de l’oferta a Firestore
   Future<void> _actualitzarOferta() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return; // Valida el formulari
 
-    setState(() => _isSaving = true);
+    setState(() => _isSaving = true); // Indica que s’està guardant
 
     try {
       await FirebaseFirestore.instance
@@ -66,12 +74,13 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
       });
 
       if (context.mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context); // Tanca la pantalla
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Oferta actualitzada correctament')),
         );
       }
     } catch (e) {
+      // Mostra un error en cas de fallida
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
@@ -96,12 +105,15 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              // Camp de títol
               TextFormField(
                 controller: _titolController,
                 decoration: _inputDecoration('Títol'),
                 validator: (v) => v == null || v.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+
+              // Camp de descripció
               TextFormField(
                 controller: _descripcioController,
                 decoration: _inputDecoration('Descripció'),
@@ -109,16 +121,22 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
                 validator: (v) => v == null || v.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+
+              // Camp de requisits (no obligatori)
               TextFormField(
                 controller: _requisitsController,
                 decoration: _inputDecoration('Requisits'),
               ),
               const SizedBox(height: 16),
+
+              // Camp de ubicació
               TextFormField(
                 controller: _ubicacioController,
                 decoration: _inputDecoration('Ubicació'),
               ),
               const SizedBox(height: 28),
+
+              // Botó per guardar canvis
               ElevatedButton.icon(
                 onPressed: _isSaving ? null : _actualitzarOferta,
                 icon: _isSaving
