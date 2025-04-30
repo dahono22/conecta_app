@@ -11,9 +11,10 @@ class Usuari {
   final String email; // Correu electrònic
   final String contrasenya; // Contrasenya (nota: per seguretat, no es recomana guardar-la en text pla)
   final RolUsuari rol; // Rol dins de l'aplicació (estudiant o empresa)
-  final String? descripcio; // Descripció personal o de l'empresa
-  final String? cvUrl; // URL al CV (en el cas d'estudiants)
+  final String? descripcio; // Descripció personal (en estudiants) o corporativa (en empreses)
+  final String? cvUrl; // URL al CV (només aplicable en estudiants)
 
+  // Constructor principal de la classe Usuari
   Usuari({
     required this.id,
     required this.nom,
@@ -25,6 +26,7 @@ class Usuari {
   });
 
   // Mètode per crear una nova instància modificant només alguns camps
+  // Útil per actualitzar dades parcials sense reescriure tot l'objecte
   Usuari copyWith({
     String? nom,
     String? email,
