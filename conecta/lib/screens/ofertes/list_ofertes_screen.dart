@@ -1,7 +1,9 @@
+// Importació dels paquets necessaris
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 
+// Definició de la pantalla d'ofertes (amb estat)
 class ListOfertesScreen extends StatefulWidget {
   const ListOfertesScreen({super.key});
 
@@ -10,15 +12,17 @@ class ListOfertesScreen extends StatefulWidget {
 }
 
 class _ListOfertesScreenState extends State<ListOfertesScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String? _selectedUbicacio;
+  final TextEditingController _searchController = TextEditingController(); // Controlador pel text de cerca
+  String? _selectedUbicacio; // Filtre per ubicació seleccionada
 
   @override
   void initState() {
     super.initState();
+    // Es re-renderitza la pantalla cada vegada que canvia el text de cerca
     _searchController.addListener(() => setState(() {}));
   }
 
+  // Funció per filtrar les ofertes segons la cerca i la ubicació
   List<DocumentSnapshot> _filtrarOfertes(
     List<DocumentSnapshot> ofertes,
     String query,
@@ -38,13 +42,13 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchController.dispose(); // Alliberar recursos del controlador
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase(); // Cerca en minúscules
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
@@ -56,6 +60,7 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
       ),
       body: Column(
         children: [
+          // Camp de cerca per paraula clau
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
@@ -72,21 +77,24 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
               ),
             ),
           ),
+
+          // Filtre per ubicació (amb menú desplegable)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('ofertes').snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const SizedBox();
+                if (!snapshot.hasData) return const SizedBox(); // Si no hi ha dades, no es mostra res
 
+                // Obtenim una llista d’ubicacions úniques
                 final ubicacions = snapshot.data!.docs
                     .map((doc) => (doc.data() as Map<String, dynamic>)['ubicacio'] as String)
                     .toSet()
                     .toList()
-                  ..sort();
+                  ..sort(); // Ordenem les ubicacions alfabèticament
 
                 return DropdownButtonFormField<String>(
-                  value: _selectedUbicacio ?? 'Totes',
+                  value: _selectedUbicacio ?? 'Totes', // Valor inicial
                   decoration: InputDecoration(
                     labelText: 'Filtrar per ubicació',
                     filled: true,
@@ -104,14 +112,17 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
-                      _selectedUbicacio = value;
+                      _selectedUbicacio = value; // Actualitza el filtre
                     });
                   },
                 );
               },
             ),
           ),
+
           const SizedBox(height: 8),
+
+          // Llista d’ofertes (amb filtratge en temps real)
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -127,6 +138,7 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                   return const Center(child: Text('No hi ha cap oferta.'));
                 }
 
+                // Aplicar filtres de cerca i ubicació
                 final filtrades = _filtrarOfertes(
                   snapshot.data!.docs,
                   query,
@@ -137,6 +149,7 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                   return const Center(child: Text('No hi ha coincidències.'));
                 }
 
+                // Mostrar les ofertes filtrades
                 return ListView.builder(
                   itemCount: filtrades.length,
                   itemBuilder: (context, index) {
@@ -159,8 +172,8 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                         onTap: () {
                           Navigator.pushNamed(
                             context,
-                            AppRoutes.detallOferta,
-                            arguments: id,
+                            AppRoutes.detallOferta, // Navega al detall de l’oferta
+                            arguments: id, // Passa l’ID com argument
                           );
                         },
                       ),
