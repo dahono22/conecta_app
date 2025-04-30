@@ -3,26 +3,28 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/offer_application_service.dart';
 import '../../routes/app_routes.dart';
-import '../chat/converses_alumne_screen.dart'; // ✅ Nou import
+import '../chat/converses_alumne_screen.dart'; // ✅ Import de la pantalla de converses per a l'estudiant
 
 class HomeEstudiantScreen extends StatelessWidget {
   const HomeEstudiantScreen({super.key});
 
+  // Funció per tancar sessió: neteja dades i torna a la pantalla de login
   void _logout(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
     final applicationService =
         Provider.of<OfferApplicationService>(context, listen: false);
 
-    authService.logout();
-    applicationService.clear();
+    authService.logout(); // Tanca sessió
+    applicationService.clear(); // Elimina dades temporals de candidatures
 
     Navigator.pushNamedAndRemoveUntil(
       context,
       AppRoutes.login,
-      (route) => false,
+      (route) => false, // Esborra tot l'historial de navegació
     );
   }
 
+  // Navegació cap a la pantalla de converses de l’estudiant
   void _veureConverses(BuildContext context) {
     Navigator.push(
       context,
@@ -35,15 +37,15 @@ class HomeEstudiantScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: const Color(0xFFF4F7FA), // Fons clar i neutre
       appBar: AppBar(
         title: const Text('Home Estudiant'),
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, // Estètica minimalista
         foregroundColor: Colors.black87,
         actions: [
           IconButton(
-            onPressed: () => _logout(context),
+            onPressed: () => _logout(context), // Tanca sessió
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             tooltip: 'Tancar sessió',
           ),
@@ -55,6 +57,7 @@ class HomeEstudiantScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Missatge de benvinguda
               const Text(
                 'Benvingut, Estudiant!',
                 style: TextStyle(
@@ -64,6 +67,7 @@ class HomeEstudiantScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
+              // Botó per veure el perfil de l'estudiant
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
@@ -78,6 +82,7 @@ class HomeEstudiantScreen extends StatelessWidget {
                 label: const Text('Veure perfil'),
               ),
               const SizedBox(height: 16),
+              // Botó per veure les ofertes disponibles
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
@@ -92,6 +97,7 @@ class HomeEstudiantScreen extends StatelessWidget {
                 label: const Text('Veure Ofertes'),
               ),
               const SizedBox(height: 16),
+              // Botó per accedir a les converses amb empreses
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
