@@ -31,7 +31,7 @@ class _ChatScreenState extends State<ChatScreen> {
         .where('empresaId', isEqualTo: widget.empresaId)
         .where('alumneId', isEqualTo: widget.alumneId)
         .orderBy('timestamp') // S'ordena cronològicament
-        .snapshots();
+        .snapshots(); // Retorna un flux (stream) que actualitza automàticament quan hi ha nous missatges
   }
 
   // Funció per enviar un missatge
@@ -81,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 final missatges = snapshot.data!.docs;
 
-                // Llista de missatges
+                // Llista de missatges mostrats en format xat
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: missatges.length,
@@ -101,12 +101,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           color: isMe
                               ? Colors.blueAccent.withOpacity(0.8)
                               : Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16), // Forma del missatge
                         ),
                         child: Text(
                           msg['text'], // Contingut del missatge
                           style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black87,
+                            color: isMe ? Colors.white : Colors.black87, // Color del text segons autor
                           ),
                         ),
                       ),
