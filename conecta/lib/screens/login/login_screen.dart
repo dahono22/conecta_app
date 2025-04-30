@@ -4,6 +4,7 @@ import '../../services/auth_service.dart';
 import '../../routes/app_routes.dart';
 import '../../models/usuari.dart';
 
+// Widget d'estat per controlar els canvis durant el procés de login
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -12,14 +13,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  String? _authError;
+  final _formKey = GlobalKey<FormState>(); // Clau per validar el formulari
+  final _emailController = TextEditingController(); // Controlador per al camp email
+  final _passwordController = TextEditingController(); // Controlador per al camp contrasenya
+  bool _isLoading = false; // Indica si s'està fent login
+  String? _authError; // Missatge d'error en cas de credencials incorrectes
 
+  // Funció per gestionar l'autenticació de l'usuari
   void _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return; // Valida el formulari
 
     setState(() {
       _authError = null;
@@ -32,21 +34,23 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.text.trim(),
     );
 
-    setState(() => _isLoading = false);
+    setState(() => _isLoading = false); // Para l'indicador de càrrega
 
     if (success == true) {
+      // Redirecciona segons el rol de l'usuari
       final rol = authService.usuariActual?.rol;
       final ruta = rol == RolUsuari.empresa
           ? AppRoutes.homeEmpresa
           : AppRoutes.homeEstudiant;
-      Navigator.pushReplacementNamed(context, ruta);
+      Navigator.pushReplacementNamed(context, ruta); // Canvia a la pantalla principal
     } else {
       setState(() {
-        _authError = 'Credencials incorrectes';
+        _authError = 'Credencials incorrectes'; // Mostra error si el login ha fallat
       });
     }
   }
 
+  // Decoració reutilitzable per als camps de text
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -63,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: const Color(0xFFF4F7FA), // Fons suau
       appBar: AppBar(
         title: const Text('Iniciar Sessió'),
         backgroundColor: Colors.white,
@@ -76,6 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
           key: _formKey,
           child: Column(
             children: [
+              // Mostra error si les credencials són incorrectes
               if (_authError != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -85,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.w500,
                       )),
                 ),
+              // Camp de correu electrònic
               TextFormField(
                 controller: _emailController,
                 decoration: _inputDecoration('Email'),
@@ -92,14 +98,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+              // Camp de contrasenya
               TextFormField(
                 controller: _passwordController,
                 decoration: _inputDecoration('Contrasenya'),
-                obscureText: true,
+                obscureText: true, // Amaga el text introduït
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 24),
+              // Botó de login amb indicador de càrrega
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _login,
                 icon: _isLoading
@@ -123,6 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              // Enllaç per anar a la pantalla de registre
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, AppRoutes.register);
