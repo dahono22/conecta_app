@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
 
+/// Pantalla de registre per a nous usuaris (estudiants o empreses).
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -11,15 +12,18 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); // Clau per validar el formulari
+
+  // Controladors de text per als camps del formulari
   final _nomController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _cvUrlController = TextEditingController();
 
-  RolUsuari _rol = RolUsuari.estudiant;
-  bool _isSubmitting = false;
+  RolUsuari _rol = RolUsuari.estudiant; // Rol per defecte
+  bool _isSubmitting = false; // Controla l’estat de càrrega mentre s’envia el formulari
 
+  /// Decoració reutilitzable per als camps de text
   InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
@@ -36,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
+    final authService = Provider.of<AuthService>(context); // Accés al servei d’autenticació
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
@@ -49,9 +53,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Form(
-          key: _formKey,
+          key: _formKey, // Assigna la clau de validació
           child: ListView(
             children: [
+              // Camp per introduir el nom complet
               TextFormField(
                 controller: _nomController,
                 decoration: _inputDecoration('Nom complet'),
@@ -59,6 +64,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+
+              // Camp per introduir l'email
               TextFormField(
                 controller: _emailController,
                 decoration: _inputDecoration('Correu electrònic'),
@@ -66,6 +73,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+
+              // Camp per introduir la contrasenya (oculta)
               TextFormField(
                 controller: _passwordController,
                 decoration: _inputDecoration('Contrasenya'),
@@ -74,6 +83,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+
+              // Menú desplegable per seleccionar el rol d’usuari
               DropdownButtonFormField<RolUsuari>(
                 value: _rol,
                 decoration: _inputDecoration('Rol'),
@@ -89,6 +100,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   });
                 },
               ),
+
+              // Si el rol és estudiant, mostrar camp per enllaç al CV
               if (_rol == RolUsuari.estudiant) ...[
                 const SizedBox(height: 16),
                 TextFormField(
@@ -99,6 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   keyboardType: TextInputType.url,
                   validator: (value) {
+                    // Validació bàsica de l’enllaç si s’ha introduït
                     if (value != null && value.isNotEmpty) {
                       final uri = Uri.tryParse(value);
                       if (uri == null || !uri.hasAbsolutePath) {
@@ -110,14 +124,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ],
               const SizedBox(height: 28),
+
+              // Botó per enviar el formulari i registrar-se
               ElevatedButton.icon(
                 onPressed: _isSubmitting
                     ? null
                     : () async {
+                        // Validació de formulari
                         if (!_formKey.currentState!.validate()) return;
 
+                        // Mostra el carregador mentre es registra
                         setState(() => _isSubmitting = true);
 
+                        // Trucada al servei d’autenticació per registrar l’usuari
                         final success = await authService.registre(
                           _nomController.text.trim(),
                           _emailController.text.trim(),
@@ -132,8 +151,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         setState(() => _isSubmitting = false);
 
                         if (success) {
+                          // Navega a login si el registre té èxit
                           Navigator.of(context).pushReplacementNamed('/login');
                         } else {
+                          // Mostra error si l’email ja està registrat
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Aquest email ja està registrat')),
                           );
