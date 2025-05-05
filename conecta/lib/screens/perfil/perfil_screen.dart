@@ -1,13 +1,16 @@
+// Importació de paquets essencials per la pantalla de perfil
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Importació de serveis i models personalitzats del projecte
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
 import 'perfil_controller.dart';
 import '../../services/offer_application_service.dart';
 
+// Widget principal de la pantalla de perfil (tant per empresa com per estudiant)
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
 
@@ -16,24 +19,34 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
+  // Clau global per al formulari, per poder validar i desar
   final _formKey = GlobalKey<FormState>();
+
+  // Controlador que gestiona l'estat i la lògica del perfil
   late PerfilController _controller;
+
+  // Futur per carregar les aplicacions del perfil (usuaris estudiants)
   late Future<void> _carregarAplicacionsFuture;
 
   @override
   void initState() {
     super.initState();
+
+    // Inicialitza el controlador amb el context per accedir a serveis i dades
     _controller = PerfilController(context);
 
+    // Obté l'identificador de l'usuari actual a través del servei d'autenticació
     final authService = Provider.of<AuthService>(context, listen: false);
     final userId = authService.usuariActual?.id;
 
+    // Si hi ha un usuari autenticat, es carreguen les seves aplicacions (estudiant)
     _carregarAplicacionsFuture = userId != null
         ? Provider.of<OfferApplicationService>(context, listen: false)
             .carregarAplicacions(userId)
-        : Future.value();
+        : Future.value(); // Si no hi ha usuari, retorna un futur buit
   }
 
+  // Mètode per generar decoració coherent per als camps de formulari
   InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
@@ -46,9 +59,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  // Construeix la secció visual de les ofertes aplicades per l'estudiant
   Widget _buildOfertesAplicadesFirestore(BuildContext context, List<String> ofertaIds) {
+    // Obté l'identificador de l'usuari per consultar les seves aplicacions
     final usuariId = context.read<AuthService>().usuariActual!.id;
 
+    // Primer es carreguen les ofertes corresponents als identificadors passats
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
           .collection('ofertes')
@@ -64,6 +80,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           return const Text('Encara no has aplicat a cap oferta.');
         }
 
+        // Ara es carreguen les aplicacions de l'usuari per mostrar estat
         return FutureBuilder<QuerySnapshot>(
           future: FirebaseFirestore.instance
               .collection('aplicacions')
@@ -76,6 +93,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
             final aplicacions = snapshotAplicacions.data!.docs;
 
+            // Mostra la llista d'ofertes aplicades amb l'estat de cada aplicació
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -88,6 +106,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   final data = doc.data() as Map<String, dynamic>;
                   final ofertaId = doc.id;
 
+                  // Troba l'aplicació que correspon a aquesta oferta concreta
                   QueryDocumentSnapshot? aplicacio;
                   try {
                     aplicacio = aplicacions.firstWhere((a) => a['ofertaId'] == ofertaId);
@@ -95,8 +114,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     aplicacio = null;
                   }
 
+                  // Si no es troba estat, es mostra com a "Nou"
                   final estat = (aplicacio?.data() as Map<String, dynamic>?)?['estat'] ?? 'Nou';
 
+                  // Targeta visual amb la informació de l'oferta i l'estat de l'aplicació
                   return Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     margin: const EdgeInsets.only(bottom: 12),
@@ -132,6 +153,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Obté les dades de l'usuari i determina si és empresa o estudiant
     final usuari = context.watch<AuthService>().usuariActual!;
     final isEmpresa = usuari.rol == RolUsuari.empresa;
 
@@ -149,11 +171,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              // Títol segons el rol d'usuari
               Text(
                 isEmpresa ? 'Perfil de l\'empresa' : 'Perfil de l\'estudiant',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 24),
+
+              // Camp de text per al nom complet
               TextFormField(
                 controller: _controller.nomController,
                 decoration: _inputDecoration('Nom complet'),
@@ -161,12 +186,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
               const SizedBox(height: 16),
+
+              // Camp de text per al correu electrònic
               TextFormField(
                 controller: _controller.emailController,
                 decoration: _inputDecoration('Correu electrònic'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
+
+              // Camps addicionals només visibles per empreses
               if (isEmpresa) ...[
                 const SizedBox(height: 16),
                 TextFormField(
@@ -183,6 +212,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
+
+              // Camps per a estudiants: URL del currículum
               if (!isEmpresa) ...[
                 const SizedBox(height: 24),
                 const Text('Currículum (enllaç URL):',
@@ -206,6 +237,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+
+                // Mostra una icona de confirmació si ja hi ha un CV penjat
                 if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
                   Row(
                     children: [
@@ -228,6 +261,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 else
                   const Text('Encara no has afegit cap enllaç de currículum.'),
               ],
+
+              // Bloc de llistat d'ofertes aplicades per l'estudiant
               if (!isEmpresa) ...[
                 const SizedBox(height: 24),
                 FutureBuilder(
@@ -246,7 +281,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   },
                 ),
               ],
+
               const SizedBox(height: 24),
+
+              // Botó per desar els canvis realitzats al perfil
               ElevatedButton.icon(
                 onPressed: () => _controller.guardarCanvis(_formKey),
                 icon: const Icon(Icons.save),
