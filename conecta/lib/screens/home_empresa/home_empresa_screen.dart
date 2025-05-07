@@ -74,10 +74,17 @@ class HomeEmpresaScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA), // color de fons suau per coherència visual
       appBar: AppBar(
-        title: const Text('Home Empresa'),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'assets/images/logo.png', // Ruta del logo
+            width: 40,  // Ajusta el tamaño según sea necesario
+            height: 40,
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () => _logout(context), // tancar sessió
@@ -102,7 +109,6 @@ class HomeEmpresaScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Missatge de benvinguda
                   const Text(
                     'Benvinguda, Empresa!',
                     style: TextStyle(
@@ -112,7 +118,6 @@ class HomeEmpresaScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Targeta d’estadístiques
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 4,
@@ -128,7 +133,6 @@ class HomeEmpresaScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Botó per veure el perfil de l’empresa
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -143,7 +147,6 @@ class HomeEmpresaScreen extends StatelessWidget {
                     label: const Text('Veure perfil'),
                   ),
                   const SizedBox(height: 16),
-                  // Botó per crear una nova oferta
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -158,7 +161,6 @@ class HomeEmpresaScreen extends StatelessWidget {
                     label: const Text('Publicar nova oferta'),
                   ),
                   const SizedBox(height: 16),
-                  // Botó per veure les ofertes publicades per l’empresa
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -173,7 +175,6 @@ class HomeEmpresaScreen extends StatelessWidget {
                     label: const Text('Veure les meves ofertes'),
                   ),
                   const SizedBox(height: 16),
-                  // Botó per accedir a les converses actives amb alumnes
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),

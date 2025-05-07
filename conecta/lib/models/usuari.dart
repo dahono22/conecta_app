@@ -13,6 +13,7 @@ class Usuari {
   final RolUsuari rol; // Rol dins de l'aplicació (estudiant o empresa)
   final String? descripcio; // Descripció personal (en estudiants) o corporativa (en empreses)
   final String? cvUrl; // URL al CV (només aplicable en estudiants)
+  final String? fotoPerfilUrl; // URL de la foto de perfil (nou camp)
 
   // Constructor principal de la classe Usuari
   Usuari({
@@ -23,6 +24,7 @@ class Usuari {
     required this.rol,
     this.descripcio,
     this.cvUrl,
+    this.fotoPerfilUrl, // Inicialitzem la nova propietat
   });
 
   // Mètode per crear una nova instància modificant només alguns camps
@@ -32,6 +34,7 @@ class Usuari {
     String? email,
     String? descripcio,
     String? cvUrl,
+    String? fotoPerfilUrl, // Nou camp per la foto de perfil
   }) {
     return Usuari(
       id: id, // Manté l'ID original
@@ -41,6 +44,7 @@ class Usuari {
       rol: rol, // Manté el rol actual
       descripcio: descripcio ?? this.descripcio,
       cvUrl: cvUrl ?? this.cvUrl,
+      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl, // Afegim la nova URL de la foto
     );
   }
 }
