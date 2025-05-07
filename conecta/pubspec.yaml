@@ -30,4 +30,6 @@ flutter:
 
   assets:
     - assets/background.png
-    - assets/logo.png
+    - assets/images/logo.png
+    - assets/images/logo2.png
+    - assets/images/logo3.png

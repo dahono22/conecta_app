@@ -4,7 +4,6 @@ import '../../services/auth_service.dart';
 import '../../routes/app_routes.dart';
 import '../../models/usuari.dart';
 
-// Widget d'estat per controlar els canvis durant el procés de login
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,15 +12,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // Clau per validar el formulari
-  final _emailController = TextEditingController(); // Controlador per al camp email
-  final _passwordController = TextEditingController(); // Controlador per al camp contrasenya
-  bool _isLoading = false; // Indica si s'està fent login
-  String? _authError; // Missatge d'error en cas de credencials incorrectes
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _authError;
 
-  // Funció per gestionar l'autenticació de l'usuari
   void _login() async {
-    if (!_formKey.currentState!.validate()) return; // Valida el formulari
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _authError = null;
@@ -34,113 +32,149 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.text.trim(),
     );
 
-    setState(() => _isLoading = false); // Para l'indicador de càrrega
+    setState(() => _isLoading = false);
 
     if (success == true) {
-      // Redirecciona segons el rol de l'usuari
       final rol = authService.usuariActual?.rol;
       final ruta = rol == RolUsuari.empresa
           ? AppRoutes.homeEmpresa
           : AppRoutes.homeEstudiant;
-      Navigator.pushReplacementNamed(context, ruta); // Canvia a la pantalla principal
+      Navigator.pushReplacementNamed(context, ruta);
     } else {
       setState(() {
-        _authError = 'Credencials incorrectes'; // Mostra error si el login ha fallat
+        _authError = 'Credencials incorrectes';
       });
     }
   }
 
-  // Decoració reutilitzable per als camps de text
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      errorStyle: const TextStyle(color: Colors.redAccent),
-    );
-  }
+  InputDecoration _inputDecoration(String label, {String? hint}) {
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    filled: false,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
+    border: const UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.grey),
+    ),
+    focusedBorder: const UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.black),
+    ),
+    enabledBorder: const UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.grey),
+    ),
+    errorStyle: const TextStyle(color: Colors.redAccent),
+    labelStyle: const TextStyle(color: Colors.grey),
+  );
+}
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA), // Fons suau
-      appBar: AppBar(
-        title: const Text('Iniciar Sessió'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Mostra error si les credencials són incorrectes
-              if (_authError != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_authError!,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.w500,
-                      )),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/background.png',
+            fit: BoxFit.cover,
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.5), // Capa de oscurecimiento
+          ),
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-              // Camp de correu electrònic
-              TextFormField(
-                controller: _emailController,
-                decoration: _inputDecoration('Email'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Camp obligatori' : null,
-              ),
-              const SizedBox(height: 16),
-              // Camp de contrasenya
-              TextFormField(
-                controller: _passwordController,
-                decoration: _inputDecoration('Contrasenya'),
-                obscureText: true, // Amaga el text introduït
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Camp obligatori' : null,
-              ),
-              const SizedBox(height: 24),
-              // Botó de login amb indicador de càrrega
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _login,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/logo2.png',
+                        width: 250,
+                        height: 150,
+                      ),
+                      const SizedBox(height: 30),
+                      if (_authError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _authError!,
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      )
-                    : const Icon(Icons.login),
-                label: Text(_isLoading ? 'Entrant...' : 'Entrar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: _inputDecoration('Email'),
+                        validator: (value) =>
+                            value == null || value.isEmpty
+                                ? 'Camp obligatori'
+                                : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: _inputDecoration('Contrasenya'),
+                        obscureText: true,
+                        validator: (value) =>
+                            value == null || value.isEmpty
+                                ? 'Camp obligatori'
+                                : null,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _login,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.login),
+                        label: Text(_isLoading ? 'Entrant...' : 'Entrar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.register);
+                        },
+                        child: const Text("No tens compte? Registra't"),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              // Enllaç per anar a la pantalla de registre
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.register);
-                },
-                child: const Text("No tens compte? Registra't"),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
