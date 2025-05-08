@@ -13,7 +13,7 @@ class OfertesService {
       final ofertaId = doc['ofertaId'];
       counts[ofertaId] = (counts[ofertaId] ?? 0) + 1;
     }
-
+//holaa
     // Ordenar por número de aplicaciones (descendente) y coger los 2 primeros
     final topTwoIds = counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
