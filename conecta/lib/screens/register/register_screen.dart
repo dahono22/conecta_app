@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
 
@@ -49,25 +51,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     final authService = Provider.of<AuthService>(context, listen: false);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final nom = _nomController.text.trim();
+    final cvUrl = _rol == RolUsuari.estudiant ? _cvUrlController.text.trim() : null;
 
-    final success = await authService.registre(
-      _nomController.text.trim(),
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _rol,
-      cvUrl: _rol == RolUsuari.estudiant ? _cvUrlController.text.trim() : null,
-    );
+    try {
+      // Crear usuari a Firebase Auth
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    if (!mounted) return;
+      // Guardar perfil a Firestore
+      final nouUsuari = Usuari(
+        id: cred.user!.uid,
+        nom: nom,
+        email: email,
+        contrasenya: '',
+        rol: _rol,
+        descripcio: '',
+        cvUrl: cvUrl,
+      );
 
-    setState(() => _isSubmitting = false);
+      await authService.desarUsuariFirestore(nouUsuari);
+      authService.usuariActual = nouUsuari;
+      authService.listenCanvisUsuari(nouUsuari.id);
 
-    if (success) {
+      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/login');
-    } else {
+    } on FirebaseAuthException catch (e) {
+      String missatge = 'Error al registrar-se.';
+      if (e.code == 'email-already-in-use') {
+        missatge = 'Aquest email ja està registrat.';
+      } else if (e.code == 'invalid-email') {
+        missatge = 'El correu electrònic no és vàlid.';
+      } else if (e.code == 'weak-password') {
+        missatge = 'La contrasenya és massa dèbil (mínim 6 caràcters).';
+      }
+
       setState(() {
-        _errorText = 'Aquest email ja està registrat';
+        _errorText = missatge;
       });
+    } catch (e) {
+      setState(() {
+        _errorText = 'Error inesperat: ${e.toString()}';
+      });
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -142,7 +173,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         decoration: _inputDecoration('Contrasenya'),
                         obscureText: true,
                         validator: (value) =>
-                            value == null || value.isEmpty ? 'Camp obligatori' : null,
+                            value == null || value.length < 6
+                                ? 'Mínim 6 caràcters'
+                                : null,
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<RolUsuari>(
