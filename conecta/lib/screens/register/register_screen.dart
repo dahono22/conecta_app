@@ -23,6 +23,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isSubmitting = false;
   String? _errorText;
 
+  // 👁 Controla si se muestra o no la contraseña
+  bool _mostrarContrasenya = false;
+
   InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
@@ -174,8 +177,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: _passwordController,
-                        decoration: _inputDecoration('Contrasenya'),
-                        obscureText: true,
+                        obscureText: !_mostrarContrasenya,
+                        decoration: _inputDecoration('Contrasenya').copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _mostrarContrasenya
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _mostrarContrasenya = !_mostrarContrasenya;
+                              });
+                            },
+                          ),
+                        ),
                         validator: (value) =>
                             value == null || value.length < 6
                                 ? 'Mínim 6 caràcters'
