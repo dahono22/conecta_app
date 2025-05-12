@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../routes/app_routes.dart';
 import '../../models/usuari.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,33 +22,81 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _authError;
 
   void _login() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _authError = null;
-      _isLoading = true;
-    });
+  setState(() {
+    _authError = null;
+    _isLoading = true;
+  });
 
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final success = await authService.login(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
+  final authService = Provider.of<AuthService>(context, listen: false);
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  try {
+    // Login con Firebase Auth
+    await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: email,
+      password: password,
     );
+
+    // Cargar datos del usuario desde Firestore
+    final query = await FirebaseFirestore.instance
+        .collection('usuaris')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      setState(() {
+        _authError = 'No s’ha trobat l’usuari a Firestore.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    final data = query.docs.first.data();
+    final usuari = Usuari(
+      id: data['id'],
+      nom: data['nom'],
+      email: data['email'],
+      contrasenya: '',
+      rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
+      descripcio: data['descripcio'],
+      cvUrl: data['cvUrl'],
+    );
+
+    authService.usuariActual = usuari;
+    authService.listenCanvisUsuari(usuari.id);
+
+    if (!mounted) return;
 
     setState(() => _isLoading = false);
 
-    if (success == true) {
-      final rol = authService.usuariActual?.rol;
-      final ruta = rol == RolUsuari.empresa
-          ? AppRoutes.homeEmpresa
-          : AppRoutes.homeEstudiant;
-      Navigator.pushReplacementNamed(context, ruta);
-    } else {
-      setState(() {
-        _authError = 'Credencials incorrectes';
-      });
-    }
+    final ruta = usuari.rol == RolUsuari.empresa
+        ? AppRoutes.homeEmpresa
+        : AppRoutes.homeEstudiant;
+
+    Navigator.pushReplacementNamed(context, ruta);
+  } on FirebaseAuthException catch (e) {
+    setState(() {
+      _isLoading = false;
+      if (e.code == 'user-not-found') {
+        _authError = 'Usuari no trobat.';
+      } else if (e.code == 'wrong-password') {
+        _authError = 'Contrasenya incorrecta.';
+      } else {
+        _authError = 'Error: ${e.message}';
+      }
+    });
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+      _authError = 'Error inesperat: ${e.toString()}';
+    });
   }
+}
+
 
   InputDecoration _inputDecoration(String label, {String? hint}) {
   return InputDecoration(
