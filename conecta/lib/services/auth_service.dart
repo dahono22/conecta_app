@@ -1,26 +1,26 @@
+// lib/services/auth_service.dart
+
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuari.dart';
 
-/// Servei d'autenticació i gestió d'usuaris amb Firebase Firestore.
-/// Utilitza [ChangeNotifier] per permetre actualització reactiva a la UI.
+/// Servicio de autenticación y gestión de usuarios con Firebase Auth y Firestore.
+/// Extiende ChangeNotifier para notificar cambios a la UI.
 class AuthService with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Usuari? _usuariActual; // Usuari actualment autenticat (pot ser null si no hi ha cap).
-  StreamSubscription<DocumentSnapshot>? _usuariListener; // Subscripció per escoltar canvis en temps real.
+  Usuari? _usuariActual;
+  StreamSubscription<DocumentSnapshot>? _usuariListener;
 
-  // Getter per accedir a l’usuari actual.
   Usuari? get usuariActual => _usuariActual;
-
-  // Setter que notifica als listeners quan s’assigna un nou usuari.
-  set usuariActual(Usuari? usuari) {
-    _usuariActual = usuari;
-    notifyListeners(); // Notifica a la UI (o qualsevol listener) que l’usuari ha canviat.
+  set usuariActual(Usuari? u) {
+    _usuariActual = u;
+    notifyListeners();
   }
 
-  /// Desa (o actualitza) un usuari a la col·lecció 'usuaris' de Firestore.
   Future<void> desarUsuariFirestore(Usuari usuari) async {
     await _db.collection('usuaris').doc(usuari.id).set({
       'id': usuari.id,
@@ -29,113 +29,105 @@ class AuthService with ChangeNotifier {
       'rol': usuari.rol.name,
       'descripcio': usuari.descripcio ?? '',
       'cvUrl': usuari.cvUrl ?? '',
-    }, SetOptions(merge: true)); // Merge evita sobreescriure camps no especificats.
+    }, SetOptions(merge: true));
   }
 
-  /// Carrega un usuari de Firestore mitjançant el seu ID.
-  Future<Usuari?> carregarUsuariFirestore(String id) async {
-    final doc = await _db.collection('usuaris').doc(id).get();
-    if (!doc.exists) return null;
-
-    final data = doc.data()!;
-    return Usuari(
-      id: data['id'],
-      nom: data['nom'],
-      email: data['email'],
-      contrasenya: '', // No es desa la contrasenya per seguretat.
-      rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
-      descripcio: data['descripcio'],
-      cvUrl: data['cvUrl'],
-    );
-  }
-
-  /// Escolta els canvis en temps real de l’usuari identificat per [userId].
   void listenCanvisUsuari(String userId) {
-    // Cancel·la qualsevol subscripció prèvia.
     _usuariListener?.cancel();
-
-    _usuariListener = _db.collection('usuaris').doc(userId).snapshots().listen((snapshot) {
-      if (snapshot.exists) {
-        final data = snapshot.data()!;
-        _usuariActual = Usuari(
-          id: data['id'],
-          nom: data['nom'],
-          email: data['email'],
-          contrasenya: '', // No es recupera per seguretat.
-          rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
-          descripcio: data['descripcio'],
-          cvUrl: data['cvUrl'],
-        );
-        notifyListeners(); // Actualitza la UI o qualsevol subscrit.
-      }
+    _usuariListener = _db
+        .collection('usuaris')
+        .doc(userId)
+        .snapshots()
+        .listen((snap) {
+      if (!snap.exists) return;
+      final d = snap.data()!;
+      _usuariActual = Usuari(
+        id: d['id'],
+        nom: d['nom'],
+        email: d['email'],
+        contrasenya: '',
+        rol: d['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
+        descripcio: d['descripcio'],
+        cvUrl: d['cvUrl'],
+      );
+      notifyListeners();
     });
   }
 
-  /// Registra un nou usuari si l’email encara no està registrat.
-  Future<bool> registre(String nom, String email, String contrasenya, RolUsuari rol, {String? cvUrl}) async {
-    // Comprova si ja existeix un usuari amb aquest correu.
-    final query = await _db
-        .collection('usuaris')
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
-
-    if (query.docs.isNotEmpty) return false; // Ja existeix
-
-    // Crea un nou objecte Usuari.
-    final nouUsuari = Usuari(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // ID temporal basat en el temps.
+  Future<UserCredential> registre({
+    required String nom,
+    required String email,
+    required String password,
+    required RolUsuari rol,
+    String? descripcio,
+    String? cvUrl,
+  }) async {
+    final cred = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    final usuari = Usuari(
+      id: cred.user!.uid,
       nom: nom,
       email: email,
-      contrasenya: contrasenya,
+      contrasenya: '',
       rol: rol,
-      descripcio: '',
-      cvUrl: cvUrl,
+      descripcio: descripcio ?? '',
+      cvUrl: cvUrl ?? '',
     );
-
-    // Desa a Firestore i activa l’escolta en temps real.
-    await desarUsuariFirestore(nouUsuari);
-    _usuariActual = nouUsuari;
-    listenCanvisUsuari(nouUsuari.id);
-    notifyListeners();
-
-    return true;
-  }
-
-  /// Inicia sessió amb correu i contrasenya. Retorna true si és correcte.
-  Future<bool> login(String email, String contrasenya) async {
-    final query = await _db
-        .collection('usuaris')
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
-
-    if (query.docs.isEmpty) return false; // No trobat
-
-    final data = query.docs.first.data();
-
-    // NOTA: No es comprova la contrasenya realment. Caldria millorar-ho amb Firebase Auth.
-    final usuari = Usuari(
-      id: data['id'],
-      nom: data['nom'],
-      email: data['email'],
-      contrasenya: contrasenya,
-      rol: data['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
-      descripcio: data['descripcio'],
-      cvUrl: data['cvUrl'],
-    );
-
+    await desarUsuariFirestore(usuari);
     _usuariActual = usuari;
     listenCanvisUsuari(usuari.id);
     notifyListeners();
-
-    return true;
+    return cred;
   }
 
-  /// Tanca la sessió actual.
-  void logout() {
-    _usuariListener?.cancel(); // Atura l’escolta de canvis.
+  Future<UserCredential> login({
+    required String email,
+    required String password,
+  }) async {
+    final cred = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    listenCanvisUsuari(cred.user!.uid);
+    return cred;
+  }
+
+  Future<void> logout() async {
+    await _auth.signOut();
+    _usuariListener?.cancel();
     _usuariActual = null;
-    notifyListeners(); // Notifica el canvi d’estat.
+    notifyListeners();
   }
+
+  /// **NUEVO**: actualiza el email en Firebase Auth y en Firestore
+  Future<void> actualitzarEmail(String nouEmail) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'No hi ha cap usuari autenticat',
+      );
+    }
+    // 1) actualiza en Auth
+    await user.updateEmail(nouEmail);
+    // 2) actualiza en Firestore
+    await _db.collection('usuaris').doc(user.uid).update({'email': nouEmail});
+    // 3) actualiza en memoria local y notifica
+    if (_usuariActual != null) {
+      _usuariActual = Usuari(
+        id: _usuariActual!.id,
+        nom: _usuariActual!.nom,
+        email: nouEmail,
+        contrasenya: _usuariActual!.contrasenya,
+        rol: _usuariActual!.rol,
+        descripcio: _usuariActual!.descripcio,
+        cvUrl: _usuariActual!.cvUrl,
+      );
+      notifyListeners();
+    }
+  }
+
+  User? get currentAuthUser => _auth.currentUser;
 }
