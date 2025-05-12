@@ -188,12 +188,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
               const SizedBox(height: 16),
 
               // Camp de text per al correu electrònic
-              TextFormField(
+                            TextFormField(
                 controller: _controller.emailController,
                 decoration: _inputDecoration('Correu electrònic'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Camp obligatori' : null,
               ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () => _controller.enviarVerificacioANouCorreu(),
+                icon: const Icon(Icons.email_outlined),
+                label: const Text('Verificar nou correu'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
 
               // Camps addicionals només visibles per empreses
               if (isEmpresa) ...[
