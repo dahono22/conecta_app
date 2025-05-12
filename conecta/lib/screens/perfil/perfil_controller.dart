@@ -1,83 +1,110 @@
-// Importacions necessàries per gestionar fitxers, interfície, Firebase i el model d'usuari
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-//import 'package:firebase_storage/firebase_storage.dart';
-//import 'package:file_picker/file_picker.dart';
-//import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/usuari.dart';
 import '../../services/auth_service.dart';
 
-// Controlador per gestionar el perfil d'un usuari
 class PerfilController {
   final BuildContext context;
-
-  // Controladors de text per cada camp del formulari
   late TextEditingController nomController;
   late TextEditingController emailController;
   late TextEditingController descripcioController;
   late TextEditingController cvUrlController;
   late RolUsuari rol;
 
-  // Constructor del controlador, inicialitza els camps amb dades de l'usuari actual
   PerfilController(this.context) {
-    final usuari = Provider.of<AuthService>(context, listen: false).usuariActual!;
-    nomController = TextEditingController(text: usuari.nom);
-    emailController = TextEditingController(text: usuari.email);
-    descripcioController = TextEditingController(text: usuari.descripcio ?? '');
-    cvUrlController = TextEditingController(text: usuari.cvUrl ?? '');
-    rol = usuari.rol;
+    final u = Provider.of<AuthService>(context, listen: false).usuariActual!;
+    nomController = TextEditingController(text: u.nom);
+    emailController = TextEditingController(text: u.email);
+    descripcioController = TextEditingController(text: u.descripcio ?? '');
+    cvUrlController = TextEditingController(text: u.cvUrl ?? '');
+    rol = u.rol;
   }
 
-  // Guarda els canvis del formulari a Firebase si la validació és correcta
-  Future<void> guardarCanvis(GlobalKey<FormState> formKey) async {
-    if (!formKey.currentState!.validate()) return; // Si el formulari no és vàlid, s'aborta
-    if (!context.mounted) return;
+  /// ✅ Envía un correo de verificación al nuevo email antes de actualizar
+  Future<void> enviarVerificacioANouCorreu() async {
+    final nouEmail = emailController.text.trim();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentEmail = currentUser?.email;
+
+    if (nouEmail.isEmpty || nouEmail == currentEmail) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Introdueix un correu nou vàlid.')),
+      );
+      return;
+    }
 
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final usuari = authService.usuariActual!;
-
-      // Es crea un nou objecte usuari amb les dades modificades
-      final nouUsuari = Usuari(
-        id: usuari.id,
-        nom: nomController.text.trim(),
-        email: emailController.text.trim(),
-        contrasenya: usuari.contrasenya,
-        rol: usuari.rol,
-        descripcio: descripcioController.text.trim(),
-        cvUrl: cvUrlController.text.trim(),
-      );
-
-      // Es guarda l'usuari nou tant a la sessió com a Firestore
-      authService.usuariActual = nouUsuari;
-      await authService.desarUsuariFirestore(nouUsuari);
-
-      if (!context.mounted) return;
-
-      // Notificació d'èxit
+      await currentUser?.verifyBeforeUpdateEmail(nouEmail);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Canvis desats correctament')),
+        const SnackBar(
+          content: Text(
+            'T’hem enviat un correu per verificar el nou email. Revisa’l.',
+          ),
+        ),
       );
     } catch (e) {
-      if (!context.mounted) return;
-
-      // Notificació d'error
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: ${e.toString()}')),
+        SnackBar(content: Text('Error en enviar verificació: ${e.toString()}')),
       );
     }
   }
 
-  // Funció de pujada de CV (actualment deshabilitada)
+  /// ✅ Guarda los cambios del formulario si el email ya ha sido verificado
+  Future<void> guardarCanvis(GlobalKey<FormState> formKey) async {
+    if (!formKey.currentState!.validate()) return;
+    if (!context.mounted) return;
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final usuari = authService.usuariActual!;
+    final nouEmail = emailController.text.trim();
+    final campNom = nomController.text.trim();
+    final campDesc = descripcioController.text.trim();
+    final campCv = cvUrlController.text.trim();
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await user?.reload();
+
+      // ⚠️ Si el email ha sido modificado en Auth, actualizamos también en Firestore
+      if (nouEmail != usuari.email) {
+        if (user?.email != nouEmail) {
+          throw Exception('Has de verificar el nou correu abans de desar.');
+        } else {
+          // ✅ Actualizamos Firestore con el nuevo email
+          await authService.actualitzarEmail(nouEmail);
+        }
+      }
+
+      final nouUsuari = Usuari(
+        id: usuari.id,
+        nom: campNom,
+        email: nouEmail,
+        contrasenya: usuari.contrasenya,
+        rol: rol,
+        descripcio: campDesc,
+        cvUrl: campCv,
+      );
+
+      await authService.desarUsuariFirestore(nouUsuari);
+      authService.usuariActual = nouUsuari;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Canvis desats correctament')),
+      );
+    } catch (e) {
+      final msg = e.toString().replaceAll('Exception: ', '');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar: $msg')));
+    }
+  }
+
   Future<void> pujarCV() async {
     if (!context.mounted) return;
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // Notificació que la funcionalitat està deshabilitada
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(content: Text('Esta funcionalidad ha sido deshabilitada')),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Funcionalitat deshabilitada')),
     );
   }
 }
