@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
+import '../../routes/app_routes.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -57,13 +58,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final cvUrl = _rol == RolUsuari.estudiant ? _cvUrlController.text.trim() : null;
 
     try {
-      // Crear usuari a Firebase Auth
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Guardar perfil a Firestore
       final nouUsuari = Usuari(
         id: cred.user!.uid,
         nom: nom,
@@ -79,7 +78,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       authService.listenCanvisUsuari(nouUsuari.id);
 
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/login');
+
+      final ruta = nouUsuari.rol == RolUsuari.empresa
+          ? AppRoutes.homeEmpresa
+          : AppRoutes.homeEstudiant;
+
+      Navigator.of(context).pushReplacementNamed(ruta);
     } on FirebaseAuthException catch (e) {
       String missatge = 'Error al registrar-se.';
       if (e.code == 'email-already-in-use') {

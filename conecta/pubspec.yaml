@@ -10,15 +10,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.0.0
   cupertino_icons: ^1.0.8
+  provider: ^6.1.2
 
   # 🔥 Firebase
-  firebase_core: ^2.10.0
-  cloud_firestore: ^4.8.2
-  firebase_storage: ^11.2.0
+  firebase_core: ^2.27.0
+  cloud_firestore: ^4.15.4
+  firebase_auth: ^4.17.4
+  firebase_storage: ^11.6.6
+
+  # 📦 Altres
+  url_launcher: ^6.2.5
   # file_picker: ^6.1.1
-  url_launcher: ^6.2.5 # 📦 AFEGIT
 
 dev_dependencies:
   flutter_test:
