@@ -1,21 +1,24 @@
+// lib/models/usuari.dart
+
 // Enum per representar el rol de l'usuari dins la plataforma
 enum RolUsuari {
   estudiant, // Usuari que busca ofertes
   empresa,   // Usuari que publica ofertes
 }
 
-// Classe que representa un usuari dins l'aplicació
+// Classe que representa un usuari dins de l'aplicació
 class Usuari {
-  final String id; // ID únic de l'usuari (Firestore)
-  final String nom; // Nom de l'usuari
-  final String email; // Correu electrònic
-  final String contrasenya; // Contrasenya (nota: per seguretat, no es recomana guardar-la en text pla)
-  final RolUsuari rol; // Rol dins de l'aplicació (estudiant o empresa)
-  final String? descripcio; // Descripció personal (en estudiants) o corporativa (en empreses)
-  final String? cvUrl; // URL al CV (només aplicable en estudiants)
-  final String? fotoPerfilUrl; // URL de la foto de perfil (nou camp)
+  final String id;               // ID únic de l'usuari (Firestore)
+  final String nom;              // Nom de l'usuari
+  final String email;            // Correu electrònic
+  final String contrasenya;      // Contrasenya (no recomanat guardar en text pla)
+  final RolUsuari rol;           // Rol dins de l'aplicació
+  final String? descripcio;      // Descripció personal o corporativa
+  final String? cvUrl;           // URL del CV (només estudiants)
+  final String? fotoPerfilUrl;   // URL de la foto de perfil (opcional)
+  final List<String> interessos; // Interessos predefinits seleccionats per l'usuari
 
-  // Constructor principal de la classe Usuari
+  // Constructor principal
   Usuari({
     required this.id,
     required this.nom,
@@ -24,27 +27,29 @@ class Usuari {
     required this.rol,
     this.descripcio,
     this.cvUrl,
-    this.fotoPerfilUrl, // Inicialitzem la nova propietat
-  });
+    this.fotoPerfilUrl,
+    List<String>? interessos,
+  }) : interessos = interessos ?? [];
 
-  // Mètode per crear una nova instància modificant només alguns camps
-  // Útil per actualitzar dades parcials sense reescriure tot l'objecte
+  /// Crea una nova instància modificant només alguns camps
   Usuari copyWith({
     String? nom,
     String? email,
     String? descripcio,
     String? cvUrl,
-    String? fotoPerfilUrl, // Nou camp per la foto de perfil
+    String? fotoPerfilUrl,
+    List<String>? interessos,
   }) {
     return Usuari(
-      id: id, // Manté l'ID original
-      nom: nom ?? this.nom, // Nom nou si s'especifica, sinó manté l'actual
-      email: email ?? this.email, // Idem amb el correu
-      contrasenya: contrasenya, // Manté la contrasenya actual (no permet modificar-la aquí)
-      rol: rol, // Manté el rol actual
+      id: id,
+      nom: nom ?? this.nom,
+      email: email ?? this.email,
+      contrasenya: contrasenya,
+      rol: rol,
       descripcio: descripcio ?? this.descripcio,
       cvUrl: cvUrl ?? this.cvUrl,
-      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl, // Afegim la nova URL de la foto
+      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
+      interessos: interessos ?? this.interessos,
     );
   }
 }
