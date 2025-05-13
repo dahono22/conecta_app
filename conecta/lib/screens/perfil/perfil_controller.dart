@@ -1,3 +1,5 @@
+// lib/screens/perfil/perfil_controller.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -36,6 +38,7 @@ class PerfilController {
     }
 
     try {
+      // Envía un correo de verificación antes de actualizar el email
       await currentUser?.verifyBeforeUpdateEmail(nouEmail);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -72,11 +75,12 @@ class PerfilController {
         if (user?.email != nouEmail) {
           throw Exception('Has de verificar el nou correu abans de desar.');
         } else {
-          // ✅ Actualizamos Firestore con el nuevo email
+          // ✅ Actualizamos Auth y Firestore con el nuevo email
           await authService.actualitzarEmail(nouEmail);
         }
       }
 
+      // Construye el nuevo objeto usuario con los datos actualizados
       final nouUsuari = Usuari(
         id: usuari.id,
         nom: campNom,
@@ -87,6 +91,7 @@ class PerfilController {
         cvUrl: campCv,
       );
 
+      // Guarda los cambios en Firestore y actualiza el estado local
       await authService.desarUsuariFirestore(nouUsuari);
       authService.usuariActual = nouUsuari;
 
@@ -95,12 +100,13 @@ class PerfilController {
       );
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al guardar: $msg')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar: $msg')),
+      );
     }
   }
 
+  /// Funcionalidad de subida de CV (actualmente deshabilitada)
   Future<void> pujarCV() async {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
