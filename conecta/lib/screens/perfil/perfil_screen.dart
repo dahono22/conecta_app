@@ -1,4 +1,5 @@
-// Importació de paquets essencials per la pantalla de perfil
+// lib/screens/perfil/perfil_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../services/auth_service.dart';
 import '../../models/usuari.dart';
-import '../../routes/app_routes.dart'; // ← Afegeix aquesta línia
+import '../../routes/app_routes.dart';
 import 'perfil_controller.dart';
 import '../../services/offer_application_service.dart';
 
@@ -29,9 +30,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final userId = authService.usuariActual?.id;
     _carregarAplicacionsFuture = userId != null
-      ? Provider.of<OfferApplicationService>(context, listen: false)
-          .carregarAplicacions(userId)
-      : Future.value();
+        ? Provider.of<OfferApplicationService>(context, listen: false)
+            .carregarAplicacions(userId)
+        : Future.value();
   }
 
   InputDecoration _inputDecoration(String label, {String? hint}) {
@@ -88,9 +89,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   } catch (_) {
                     aplicacio = null;
                   }
-                  final estat = (aplicacio?.data() as Map<String, dynamic>?)?['estat'] ?? 'Nou';
+                  final estat =
+                      (aplicacio?.data() as Map<String, dynamic>?)?['estat'] ?? 'Nou';
                   return Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
@@ -99,7 +102,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         children: [
                           Text(
                             data['titol'] ?? '',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
@@ -128,8 +132,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // Imagen de fondo
           Image.asset('assets/background.png', fit: BoxFit.cover),
+          // Capa oscura
           Container(color: Colors.black.withOpacity(0.5)),
+          // Card central
           Center(
             child: SingleChildScrollView(
               child: Container(
@@ -150,15 +157,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // ← Botó tornar enrere, porta a home segons rol
+                      // Botó tornar enrere, porta a home segons rol
                       Align(
                         alignment: Alignment.topLeft,
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.blueAccent),
+                          icon: const Icon(Icons.arrow_back,
+                              color: Colors.blueAccent),
                           onPressed: () {
                             final ruta = isEmpresa
-                              ? AppRoutes.homeEmpresa
-                              : AppRoutes.homeEstudiant;
+                                ? AppRoutes.homeEmpresa
+                                : AppRoutes.homeEstudiant;
                             Navigator.pushReplacementNamed(context, ruta);
                           },
                           tooltip: 'Tornar',
@@ -166,29 +174,40 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
 
                       Text(
-                        isEmpresa ? 'Perfil de l\'empresa' : 'Perfil de l\'estudiant',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        isEmpresa
+                            ? 'Perfil de l\'empresa'
+                            : 'Perfil de l\'estudiant',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 24),
 
+                      // Nom complet
                       TextFormField(
                         controller: _controller.nomController,
                         decoration: _inputDecoration('Nom complet'),
                         validator: (value) =>
-                            value == null || value.isEmpty ? 'Camp obligatori' : null,
+                            value == null || value.isEmpty
+                                ? 'Camp obligatori'
+                                : null,
                       ),
                       const SizedBox(height: 16),
 
+                      // Correu electrònic
                       TextFormField(
                         controller: _controller.emailController,
                         decoration: _inputDecoration('Correu electrònic'),
                         validator: (value) =>
-                            value == null || value.isEmpty ? 'Camp obligatori' : null,
+                            value == null || value.isEmpty
+                                ? 'Camp obligatori'
+                                : null,
                       ),
                       const SizedBox(height: 8),
 
+                      // Botó verificar nou correu
                       ElevatedButton.icon(
-                        onPressed: () => _controller.enviarVerificacioANouCorreu(),
+                        onPressed: () =>
+                            _controller.enviarVerificacioANouCorreu(),
                         icon: const Icon(Icons.email_outlined),
                         label: const Text('Verificar nou correu'),
                         style: ElevatedButton.styleFrom(
@@ -200,34 +219,34 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ),
 
+                      // Descripció empresa
                       if (isEmpresa) ...[
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _controller.descripcioController,
                           decoration: _inputDecoration(
-                            'Descripció de l\'empresa',
-                            hint: 'Ex: Som una startup dedicada a...',
-                          ),
+                              'Descripció de l\'empresa'),
                           maxLines: 3,
                         ),
                         const SizedBox(height: 8),
                         const Text(
                           'Aquest text serà visible per als estudiants.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
 
+                      // CV URL per estudiants
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         const Text('Currículum (enllaç URL):',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _controller.cvUrlController,
-                          decoration: _inputDecoration(
-                            'Enllaç al CV (Drive, Dropbox...)',
-                            hint: 'https://...',
-                          ),
+                          decoration:
+                              _inputDecoration('Enllaç al CV (Drive, Dropbox...)'),
                           keyboardType: TextInputType.url,
                           validator: (value) {
                             if (value != null && value.isNotEmpty) {
@@ -243,7 +262,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
                           Row(
                             children: [
-                              const Icon(Icons.check_circle, color: Colors.green),
+                              const Icon(Icons.check_circle,
+                                  color: Colors.green),
                               const SizedBox(width: 8),
                               const Text('Enllaç actual:'),
                               const Spacer(),
@@ -253,39 +273,46 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 onPressed: () async {
                                   final uri = Uri.parse(usuari.cvUrl!);
                                   if (await canLaunchUrl(uri)) {
-                                    await launchUrl(
-                                      uri,
-                                      mode: LaunchMode.externalApplication,
-                                    );
+                                    await launchUrl(uri,
+                                        mode: LaunchMode
+                                            .externalApplication);
                                   }
                                 },
                               ),
                             ],
                           )
                         else
-                          const Text('Encara no has afegit cap enllaç de currículum.'),
+                          const Text(
+                              'Encara no has afegit cap enllaç de currículum.'),
                       ],
 
+                      // Ofertes aplicades per estudiants
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         FutureBuilder(
                           future: _carregarAplicacionsFuture,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
                             }
-                            final ids =
-                                context.read<OfferApplicationService>().idsAplicades;
+                            final ids = context
+                                .read<OfferApplicationService>()
+                                .idsAplicades;
                             if (ids.isEmpty) {
-                              return const Text('Encara no has aplicat a cap oferta.');
+                              return const Text(
+                                  'Encara no has aplicat a cap oferta.');
                             }
-                            return _buildOfertesAplicadesFirestore(context, ids);
+                            return _buildOfertesAplicadesFirestore(
+                                context, ids);
                           },
                         ),
                       ],
 
                       const SizedBox(height: 24),
 
+                      // Botó desar canvis
                       ElevatedButton.icon(
                         onPressed: () => _controller.guardarCanvis(_formKey),
                         icon: const Icon(Icons.save),
