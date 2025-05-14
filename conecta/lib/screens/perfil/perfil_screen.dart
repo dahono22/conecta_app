@@ -10,6 +10,7 @@ import '../../models/usuari.dart';
 import '../../routes/app_routes.dart';
 import 'perfil_controller.dart';
 import '../../services/offer_application_service.dart';
+import '../../utils/constants.dart'; // import constants
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -22,14 +23,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
   final _formKey = GlobalKey<FormState>();
   late PerfilController _controller;
   late Future<void> _carregarAplicacionsFuture;
+  List<String> _selectedInterests = []; // track selected interests
+  String? _interestsError; // error message
 
   @override
   void initState() {
     super.initState();
     _controller = PerfilController(context);
     final authService = Provider.of<AuthService>(context, listen: false);
-    final userId = authService.usuariActual?.id;
-    _carregarAplicacionsFuture = userId != null
+    final user = authService.usuariActual!;
+    _selectedInterests = List.from(user.intereses); // initialize
+    final userId = user.id;
+    _carregarAplicacionsFuture = userId.isNotEmpty
         ? Provider.of<OfferApplicationService>(context, listen: false)
             .carregarAplicacions(userId)
         : Future.value();
@@ -123,6 +128,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  void _toggleInterest(String interest) {
+    setState(() {
+      if (_selectedInterests.contains(interest)) {
+        _selectedInterests.remove(interest);
+      } else if (_selectedInterests.length < 3) {
+        _selectedInterests.add(interest);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final usuari = context.watch<AuthService>().usuariActual!;
@@ -132,11 +147,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Imagen de fondo
           Image.asset('assets/background.png', fit: BoxFit.cover),
-          // Capa oscura
           Container(color: Colors.black.withOpacity(0.5)),
-          // Card central
           Center(
             child: SingleChildScrollView(
               child: Container(
@@ -157,7 +169,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Botó tornar enrere, porta a home segons rol
                       Align(
                         alignment: Alignment.topLeft,
                         child: IconButton(
@@ -182,7 +193,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Nom complet
                       TextFormField(
                         controller: _controller.nomController,
                         decoration: _inputDecoration('Nom complet'),
@@ -193,7 +203,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Correu electrònic
                       TextFormField(
                         controller: _controller.emailController,
                         decoration: _inputDecoration('Correu electrònic'),
@@ -204,7 +213,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Botó verificar nou correu
                       ElevatedButton.icon(
                         onPressed: () =>
                             _controller.enviarVerificacioANouCorreu(),
@@ -219,7 +227,42 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ),
 
-                      // Descripció empresa
+                      // Interesses per estudiants
+                      if (!isEmpresa) ...[
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Els teus interessos (fins a 3):',
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          children: Constants.camposDisponibles.map((campo) {
+                            final selected = _selectedInterests.contains(campo);
+                            return FilterChip(
+                              label: Text(campo),
+                              selected: selected,
+                              onSelected: (_) => _toggleInterest(campo),
+                            );
+                          }).toList(),
+                        ),
+                        if (_interestsError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              _interestsError!,
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+
                       if (isEmpresa) ...[
                         const SizedBox(height: 16),
                         TextFormField(
@@ -231,12 +274,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         const SizedBox(height: 8),
                         const Text(
                           'Aquest text serà visible per als estudiants.',
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
 
-                      // CV URL per estudiants
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         const Text('Currículum (enllaç URL):',
@@ -286,7 +327,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               'Encara no has afegit cap enllaç de currículum.'),
                       ],
 
-                      // Ofertes aplicades per estudiants
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         FutureBuilder(
@@ -312,9 +352,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Botó desar canvis
                       ElevatedButton.icon(
-                        onPressed: () => _controller.guardarCanvis(_formKey),
+                        onPressed: () {
+                          // Validació d'interessos
+                          if (!isEmpresa && _selectedInterests.isEmpty) {
+                            setState(() => _interestsError = 'Selecciona fins a 1 i 3 interessos');
+                            return;
+                          }
+                          _controller.guardarCanvis(_formKey, _selectedInterests);
+                        },
                         icon: const Icon(Icons.save),
                         label: const Text('Desar canvis'),
                         style: ElevatedButton.styleFrom(
