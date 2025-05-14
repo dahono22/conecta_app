@@ -34,7 +34,7 @@ class AuthService with ChangeNotifier {
         'descripcio': usuari.descripcio ?? '',
         'cvUrl': usuari.cvUrl ?? '',
         'fotoPerfilUrl': usuari.fotoPerfilUrl ?? '',
-        'interessos': usuari.interessos,  // Lista de interesos del usuario
+        'intereses': usuari.intereses,  // Lista de intereses del usuario
       }, SetOptions(merge: true));
   }
 
@@ -50,17 +50,17 @@ class AuthService with ChangeNotifier {
         if (!snap.exists) return;
         final d = snap.data()!;
         _usuariActual = Usuari(
-          id: d['id'],
-          nom: d['nom'],
-          email: d['email'],
+          id: d['id'] as String,
+          nom: d['nom'] as String,
+          email: d['email'] as String,
           contrasenya: '',
           rol: d['rol'] == 'empresa'
               ? RolUsuari.empresa
               : RolUsuari.estudiant,
-          descripcio: d['descripcio'],
-          cvUrl: d['cvUrl'],
-          fotoPerfilUrl: d['fotoPerfilUrl'],
-          interessos: List<String>.from(d['interessos'] ?? []),
+          descripcio: d['descripcio'] as String?,
+          cvUrl: d['cvUrl'] as String?,
+          fotoPerfilUrl: d['fotoPerfilUrl'] as String?,
+          intereses: List<String>.from(d['intereses'] ?? []),
         );
         notifyListeners();
       });
@@ -91,7 +91,7 @@ class AuthService with ChangeNotifier {
       descripcio: descripcio ?? '',
       cvUrl: cvUrl ?? '',
       fotoPerfilUrl: null,
-      interessos: [],
+      intereses: [],
     );
 
     // 3) Guardar perfil en Firestore
@@ -135,8 +135,8 @@ class AuthService with ChangeNotifier {
         message: 'No hi ha cap usuari autenticat',
       );
     }
-    // 1) Actualiza en Auth
-    await user.updateEmail(nouEmail);
+    // 1) Actualiza en Auth verificando antes (evita deprecación)
+    await user.verifyBeforeUpdateEmail(nouEmail);
     // 2) Actualiza en Firestore
     await _db.collection('usuaris').doc(user.uid).update({'email': nouEmail});
     // 3) Actualiza en memoria local y notifica
