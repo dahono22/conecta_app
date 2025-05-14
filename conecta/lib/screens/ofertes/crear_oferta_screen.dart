@@ -1,8 +1,10 @@
-// Importacions de Flutter, Provider i serveis propis
+// lib/screens/ofertes/crear_oferta_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/offer_service.dart';
 import '../../services/auth_service.dart';
+import '../../utils/constants.dart'; // Import constants para campos
 
 // Pantalla per crear una nova oferta de feina
 class CrearOfertaScreen extends StatefulWidget {
@@ -22,16 +24,40 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
   final _requisitsController = TextEditingController();
   final _ubicacioController = TextEditingController();
 
+  // Selecció de camps relacionats
+  List<String> _selectedFields = [];
+  String? _fieldsError;
+
   // Estat per controlar si s’està enviant el formulari
   bool _isSubmitting = false;
+
+  // Funció per alternar selecció de camp
+  void _toggleField(String campo) {
+    setState(() {
+      if (_selectedFields.contains(campo)) {
+        _selectedFields.remove(campo);
+      } else {
+        _selectedFields.add(campo);
+      }
+    });
+  }
 
   // Funció per crear una nova oferta
   Future<void> _crearOferta() async {
     // Valida el formulari abans de continuar
     if (!_formKey.currentState!.validate()) return;
 
+    // Valida que s'hagi seleccionat almenys un camp
+    if (_selectedFields.isEmpty) {
+      setState(() => _fieldsError = 'Selecciona com a mínim un camp');
+      return;
+    }
+
     // Mostra indicador de càrrega
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _fieldsError = null;
+    });
 
     // Obté els serveis d'autenticació i ofertes
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -42,13 +68,14 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
     if (usuari == null) return;
 
     try {
-      // Crida al servei per crear l’oferta
+      // Crida al servei per crear l’oferta amb camps inclosos
       await offerService.crearOferta(
         titol: _titolController.text.trim(),
         descripcio: _descripcioController.text.trim(),
         requisits: _requisitsController.text.trim(),
         ubicacio: _ubicacioController.text.trim(),
         empresaId: usuari.id,
+        campos: _selectedFields,
       );
 
       // Mostra confirmació si el widget segueix muntat
@@ -149,6 +176,32 @@ class _CrearOfertaScreenState extends State<CrearOfertaScreen> {
                 controller: _ubicacioController,
                 decoration: _inputDecoration('Ubicació'),
               ),
+              const SizedBox(height: 16),
+
+              // Secció: Camps relacionats
+              const Text(
+                'Selecciona els camps relacionats',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                children: Constants.camposDisponibles.map((campo) {
+                  final selected = _selectedFields.contains(campo);
+                  return FilterChip(
+                    label: Text(campo),
+                    selected: selected,
+                    onSelected: (_) => _toggleField(campo),
+                  );
+                }).toList(),
+              ),
+              if (_fieldsError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _fieldsError!,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
+              ],
               const SizedBox(height: 28),
 
               // Botó per publicar l’oferta
