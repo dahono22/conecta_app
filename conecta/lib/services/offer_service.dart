@@ -8,14 +8,14 @@ import '../models/oferta.dart';
 class OfferService with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Crea una nova oferta a Firestore, incloent-hi una llista d'interessos predefinits
+  /// Crea una nova oferta a Firestore, incloent-hi una llista de camps relacionats
   Future<void> crearOferta({
     required String titol,
     required String descripcio,
     required String requisits,
     required String ubicacio,
     required String empresaId,
-    required List<String> interessos, // Afegim llista d'interessos
+    required List<String> campos, // Llista de camps relacionats
   }) async {
     // Obtenim el nom de l'empresa a partir del seu ID
     final empresaDoc = await _db.collection('usuaris').doc(empresaId).get();
@@ -30,29 +30,43 @@ class OfferService with ChangeNotifier {
       'empresaId': empresaId,
       'empresa': empresaNom,
       'dataPublicacio': FieldValue.serverTimestamp(),
-      'estat': 'pendent',
-      'interessos': interessos, // Guardem el camp
+      'estat': 'publicada',
+      'campos': campos, // Guardem els camps seleccionats
     };
 
     // Desa la nova oferta a Firestore
     await _db.collection('ofertes').add(novaOferta);
   }
 
-  /// Retorna les 3 ofertes més recents que coincideixin amb algun dels interessos de l'usuari
-  Future<List<Oferta>> getRecommendedOffers(List<String> userInterests) async {
+  /// Retorna les 3 ofertes més recents que coincideixin amb algun dels camps de l'usuari
+  Future<List<Oferta>> getRecommendedOffers(List<String> userCampos) async {
     // Firestore array-contains-any només pot rebre fins a 10 valors
-    final slice = userInterests.length > 10
-        ? userInterests.sublist(0, 10)
-        : userInterests;
+    final slice = userCampos.length > 10
+        ? userCampos.sublist(0, 10)
+        : userCampos;
 
     final query = await _db
         .collection('ofertes')
         .where('estat', isEqualTo: 'publicada')
-        .where('interessos', arrayContainsAny: slice)
+        .where('campos', arrayContainsAny: slice)
         .orderBy('dataPublicacio', descending: true)
         .limit(3)
         .get();
 
+    return query.docs
+        .map((doc) => Oferta.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .toList();
+  }
+
+  /// Mètode per buscar ofertes amb filtres de camps (p.e. pantalla "Ver més")
+  Future<List<Oferta>> getOffersByCampos(List<String> filtros) async {
+    final slice = filtros.length > 10 ? filtros.sublist(0, 10) : filtros;
+    final query = await _db
+        .collection('ofertes')
+        .where('estat', isEqualTo: 'publicada')
+        .where('campos', arrayContainsAny: slice)
+        .orderBy('dataPublicacio', descending: true)
+        .get();
     return query.docs
         .map((doc) => Oferta.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
