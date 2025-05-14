@@ -16,7 +16,7 @@ class Usuari {
   final String? descripcio;      // Descripció personal o corporativa
   final String? cvUrl;           // URL del CV (només estudiants)
   final String? fotoPerfilUrl;   // URL de la foto de perfil (opcional)
-  final List<String> interessos; // Interessos predefinits seleccionats per l'usuari
+  final List<String> intereses;  // Llista d'interessos (fins a 3) per estudiants
 
   // Constructor principal
   Usuari({
@@ -28,8 +28,8 @@ class Usuari {
     this.descripcio,
     this.cvUrl,
     this.fotoPerfilUrl,
-    List<String>? interessos,
-  }) : interessos = interessos ?? [];
+    required this.intereses,
+  });
 
   /// Crea una nova instància modificant només alguns camps
   Usuari copyWith({
@@ -38,7 +38,7 @@ class Usuari {
     String? descripcio,
     String? cvUrl,
     String? fotoPerfilUrl,
-    List<String>? interessos,
+    List<String>? intereses,  // Permet actualitzar interessos
   }) {
     return Usuari(
       id: id,
@@ -49,7 +49,35 @@ class Usuari {
       descripcio: descripcio ?? this.descripcio,
       cvUrl: cvUrl ?? this.cvUrl,
       fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
-      interessos: interessos ?? this.interessos,
+      intereses: intereses ?? this.intereses,
     );
+  }
+
+  /// Converteix un map de Firestore a Usuari
+  factory Usuari.fromMap(Map<String, dynamic> map, String documentId) {
+    return Usuari(
+      id: documentId,
+      nom: map['nom'] as String,
+      email: map['email'] as String,
+      contrasenya: '', // Per seguretat no es desa la contrasenya
+      rol: map['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
+      descripcio: map['descripcio'] as String?,
+      cvUrl: map['cvUrl'] as String?,
+      fotoPerfilUrl: map['fotoPerfilUrl'] as String?,
+      intereses: List<String>.from(map['intereses'] ?? <String>[]),
+    );
+  }
+
+  /// Converteix Usuari a map per Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'nom': nom,
+      'email': email,
+      'rol': rol.toString().split('.').last,
+      'descripcio': descripcio,
+      'cvUrl': cvUrl,
+      'fotoPerfilUrl': fotoPerfilUrl,
+      'intereses': intereses,
+    };
   }
 }
