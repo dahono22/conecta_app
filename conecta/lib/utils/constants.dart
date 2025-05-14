@@ -1,50 +1,37 @@
 // lib/utils/constants.dart
 
-/// Interessos predefinits per a estudiants i empreses
-const List<String> kInteressosDisponibles = [
-  // Informàtica i enginyeria de software
-  'Programació (Frontend)',
-  'Programació (Backend)',
-  'Full-Stack Development',
-  'Enginyeria de Software',
-  'Desenvolupament mòbil',
-  'DevOps',
-  'QA i Testing',
-  'Arquitectura de Software',
+/// Catálogo de campos/intereses disponibles para estudiantes y empresas
+typedef Campo = String;
 
-  // Dades i intel·ligència artificial
-  'Ciència de Dades',
-  'Anàlisi de Dades',
-  'Machine Learning',
-  'Deep Learning',
-  'Big Data',
-  'Business Intelligence',
-  'Intel·ligència Artificial',
-
-  // Xarxes i seguretat
-  'Seguretat Informàtica',
-  'Administració de Sistemes',
-  'Cloud Computing',
-  'Network Engineering',
-  'Blockchain',
-
-  // Disseny i multimèdia
-  'Disseny UX/UI',
-  'Disseny Gràfic',
-  'Animació i Vídeo 3D',
-  'Realitat Virtual / Augmentada',
-
-  // Empreses i màrqueting
-  'Màrqueting Digital',
-  'E-commerce',
-  'Community Management',
-  'Relacions Públiques',
-
-  // Altres sectors en auge
-  'Enginyeria Biomèdica',
-  'Robòtica',
-  'Internet of Things (IoT)',
-  'FinTech',
-  'LegalTech',
-  'Recursos Humans',
-];
+class Constants {
+  /// Lista de intereses/campos donde hay más demanda de prácticas
+  static const List<Campo> camposDisponibles = [
+    // Tecnología e Informática
+    'Desarrollo de Software',
+    'Data Science',
+    'Ciberseguridad',
+    'Inteligencia Artificial',
+    // Negocios y Marketing
+    'Marketing Digital',
+    'Finanzas',
+    'Recursos Humanos',
+    'Administración de Empresas',
+    // Diseño y Comunicación
+    'Diseño Gráfico',
+    'Comunicación Audiovisual',
+    'Publicidad',
+    // Ingenierías
+    'Ingeniería Mecánica',
+    'Ingeniería Eléctrica',
+    'Ingeniería Civil',
+    // Ciencias de la Vida y Salud
+    'Biotecnología',
+    'Medicina y Salud',
+    // Otras áreas
+    'Logística y Cadena de Suministro',
+    'Turismo y Hostelería',
+    'Educación',
+    'Medio Ambiente y Sostenibilidad',
+    'Derecho',
+  ];
+}
