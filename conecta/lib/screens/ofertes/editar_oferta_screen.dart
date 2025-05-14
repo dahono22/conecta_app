@@ -1,6 +1,8 @@
-// Importació de paquets necessaris
+// lib/screens/ofertes/editar_oferta_screen.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/constants.dart'; // import constants
 
 // Pantalla amb estat per editar una oferta de treball
 class EditarOfertaScreen extends StatefulWidget {
@@ -26,6 +28,10 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
   late TextEditingController _requisitsController;
   late TextEditingController _ubicacioController;
 
+  // Selecció de camps relacionats
+  late List<String> _selectedFields;
+  String? _fieldsError;
+
   bool _isSaving = false; // Estat per indicar si s’està guardant
 
   @override
@@ -36,6 +42,8 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
     _descripcioController = TextEditingController(text: widget.data['descripcio']);
     _requisitsController = TextEditingController(text: widget.data['requisits']);
     _ubicacioController = TextEditingController(text: widget.data['ubicacio']);
+    // Inicialització dels camps seleccionats
+    _selectedFields = List<String>.from(widget.data['campos'] ?? []);
   }
 
   // Decoració reutilitzable per als inputs
@@ -56,9 +64,26 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
     );
   }
 
+  // Funció per alternar selecció de camp
+  void _toggleField(String campo) {
+    setState(() {
+      if (_selectedFields.contains(campo)) {
+        _selectedFields.remove(campo);
+      } else {
+        _selectedFields.add(campo);
+      }
+    });
+  }
+
   // Funció per actualitzar les dades de l’oferta a Firestore
   Future<void> _actualitzarOferta() async {
     if (!_formKey.currentState!.validate()) return; // Valida el formulari
+
+    // Valida que s'hagi seleccionat almenys un camp
+    if (_selectedFields.isEmpty) {
+      setState(() => _fieldsError = 'Selecciona com a mínim un camp');
+      return;
+    }
 
     setState(() => _isSaving = true); // Indica que s’està guardant
 
@@ -71,6 +96,7 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
         'descripcio': _descripcioController.text.trim(),
         'requisits': _requisitsController.text.trim(),
         'ubicacio': _ubicacioController.text.trim(),
+        'campos': _selectedFields,
       });
 
       if (context.mounted) {
@@ -134,6 +160,32 @@ class _EditarOfertaScreenState extends State<EditarOfertaScreen> {
                 controller: _ubicacioController,
                 decoration: _inputDecoration('Ubicació'),
               ),
+              const SizedBox(height: 16),
+
+              // Secció: Camps relacionats
+              const Text(
+                'Selecciona els camps relacionats',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                children: Constants.camposDisponibles.map((campo) {
+                  final selected = _selectedFields.contains(campo);
+                  return FilterChip(
+                    label: Text(campo),
+                    selected: selected,
+                    onSelected: (_) => _toggleField(campo),
+                  );
+                }).toList(),
+              ),
+              if (_fieldsError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _fieldsError!,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
+              ],
               const SizedBox(height: 28),
 
               // Botó per guardar canvis
