@@ -24,7 +24,7 @@ class PerfilController {
     rol = u.rol;
   }
 
-  /// ✅ Envía un correo de verificación al nuevo email antes de actualizar
+  /// Envía un correo de verificación al nuevo email antes de actualizar
   Future<void> enviarVerificacioANouCorreu() async {
     final nouEmail = emailController.text.trim();
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -38,7 +38,6 @@ class PerfilController {
     }
 
     try {
-      // Envía un correo de verificación antes de actualizar el email
       await currentUser?.verifyBeforeUpdateEmail(nouEmail);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -54,8 +53,8 @@ class PerfilController {
     }
   }
 
-  /// ✅ Guarda los cambios del formulario si el email ya ha sido verificado
-  Future<void> guardarCanvis(GlobalKey<FormState> formKey) async {
+  /// Guarda los cambios del formulario si el email ya ha sido verificado
+  Future<void> guardarCanvis(GlobalKey<FormState> formKey, List<String> intereses) async {
     if (!formKey.currentState!.validate()) return;
     if (!context.mounted) return;
 
@@ -70,17 +69,16 @@ class PerfilController {
       final user = FirebaseAuth.instance.currentUser;
       await user?.reload();
 
-      // ⚠️ Si el email ha sido modificado en Auth, actualizamos también en Firestore
+      // Actualiza el email en Auth si ha cambiado y ya verificado
       if (nouEmail != usuari.email) {
         if (user?.email != nouEmail) {
           throw Exception('Has de verificar el nou correu abans de desar.');
         } else {
-          // ✅ Actualizamos Auth y Firestore con el nuevo email
           await authService.actualitzarEmail(nouEmail);
         }
       }
 
-      // Construye el nuevo objeto usuario con los datos actualizados
+      // Construye el objeto usuario con los datos actualizados e intereses
       final nouUsuari = Usuari(
         id: usuari.id,
         nom: campNom,
@@ -89,9 +87,10 @@ class PerfilController {
         rol: rol,
         descripcio: campDesc,
         cvUrl: campCv,
+        intereses: rol == RolUsuari.estudiant ? intereses : [],
       );
 
-      // Guarda los cambios en Firestore y actualiza el estado local
+      // Guarda en Firestore y actualiza estado local
       await authService.desarUsuariFirestore(nouUsuari);
       authService.usuariActual = nouUsuari;
 
