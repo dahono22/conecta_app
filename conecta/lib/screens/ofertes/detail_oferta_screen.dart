@@ -1,44 +1,50 @@
-// Importacions necessàries
+// lib/screens/ofertes/detail_oferta_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../services/offer_application_service.dart';
 import '../../services/auth_service.dart';
-import '../../models/usuari.dart';
+import '../../routes/app_routes.dart';
 
-// Widget sense estat per mostrar el detall d'una oferta
-class DetailOfertaScreen extends StatelessWidget {
+class DetailOfertaScreen extends StatefulWidget {
   const DetailOfertaScreen({super.key});
 
-  // Mostra un diàleg de confirmació per aplicar a una oferta
+  @override
+  State<DetailOfertaScreen> createState() => _DetailOfertaScreenState();
+}
+
+class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
+  late Future<void> _loadAppsFuture;
+  late String _ofertaId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Un cop tenim el context, llegim l'argument i carreguem aplicacions
+    _ofertaId = ModalRoute.of(context)!.settings.arguments as String;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    _loadAppsFuture = Provider.of<OfferApplicationService>(
+      context,
+      listen: false,
+    ).carregarAplicacions(authService.usuariActual!.id);
+  }
+
   Future<void> _mostrarDialogAplicacio(
     BuildContext context,
     String idOferta,
     String titolOferta,
   ) async {
-    // Obté els serveis d'aplicacions i d'autenticació
     final applicationService =
         Provider.of<OfferApplicationService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
-    final usuari = authService.usuariActual;
-
-    // Si l'usuari no està identificat, mostra un error
-    if (usuari == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No s'ha pogut identificar l'usuari.")),
-        );
-      }
-      return;
-    }
-
-    // Comprova si l'usuari ja ha aplicat a l'oferta (consultant Firestore)
+    final usuari = authService.usuariActual!;
+    // Tornem a comprovar directament a Firestore
     final jaAplicada = await applicationService.jaAplicadaFirestore(
       usuariId: usuari.id,
       ofertaId: idOferta,
     );
-
-    // Si ja ha aplicat, mostra missatge informatiu
     if (jaAplicada) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -48,199 +54,314 @@ class DetailOfertaScreen extends StatelessWidget {
       return;
     }
 
-    // Si no ha aplicat, mostra diàleg de confirmació
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return Consumer<OfferApplicationService>(
-            builder: (context, applicationService, _) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Consumer<OfferApplicationService>(
+          builder: (context, applicationService, _) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Confirmar aplicació'),
+              content: Text('Vols aplicar a l\'oferta "$titolOferta"?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel·lar'),
                 ),
-                title: const Text('Confirmar aplicació'),
-                content: Text('Vols aplicar a l\'oferta "$titolOferta"?'),
-                actions: [
-                  // Botó de cancel·lació
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel·lar'),
-                  ),
-                  // Botó per confirmar l'aplicació
-                  ElevatedButton(
-                    onPressed: applicationService.loading
-                        ? null
-                        : () async {
-                            try {
-                              applicationService.setLoading(true);
-                              // Aplica a l’oferta amb l’ID de l’usuari i el seu CV
-                              await applicationService.aplicarAOferta(
-                                usuari.id,
-                                idOferta,
-                                cvUrl: usuari.cvUrl,
-                              );
-                              if (!context.mounted) return;
-                              Navigator.pop(context); // Tanca el diàleg
+                ElevatedButton(
+                  onPressed: applicationService.loading
+                      ? null
+                      : () async {
+                          try {
+                            applicationService.setLoading(true);
+                            await applicationService.aplicarAOferta(
+                              usuari.id,
+                              idOferta,
+                              cvUrl: usuari.cvUrl,
+                            );
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Has aplicat correctament.'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            Navigator.of(context).pop(true);
+                          } catch (_) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Has aplicat correctament.'),
-                                  duration: Duration(seconds: 2),
+                                SnackBar(
+                                  content: Text(applicationService.error ??
+                                      'Error inesperat.'),
+                                  backgroundColor: Colors.red,
                                 ),
                               );
-                              Navigator.of(context).pop(true); // Torna enrere
-                            } catch (_) {
-                              // En cas d’error, mostra missatge
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(applicationService.error ??
-                                        'Error inesperat.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            } finally {
-                              applicationService.setLoading(false);
                             }
-                          },
-                    // Mostra un indicador si està carregant
-                    child: applicationService.loading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Confirmar'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-    }
+                          } finally {
+                            applicationService.setLoading(false);
+                          }
+                        },
+                  child: applicationService.loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Confirmar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Obté l'ID de l'oferta passat com a argument
-    final ofertaId = ModalRoute.of(context)!.settings.arguments as String;
+    return FutureBuilder<void>(
+      future: _loadAppsFuture,
+      builder: (context, snap) {
+        // Mentre es carreguen les aplicacions
+        if (snap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF4F7FA),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Un cop carregat, mostrem la UI
+        return Scaffold(
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Fons
+              Image.asset('assets/background.png', fit: BoxFit.cover),
+              Container(color: Colors.black.withOpacity(0.5)),
+              SafeArea(
+                child: SingleChildScrollView(
+                  child: Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('ofertes')
+                          .doc(_ofertaId)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return const Center(child: Text('Oferta no trobada.'));
+                        }
+                        final data =
+                            snapshot.data!.data() as Map<String, dynamic>;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
-      appBar: AppBar(
-        title: const Text('Detall de l\'oferta'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
-        // Escolta canvis en temps real de l'oferta
-        stream: FirebaseFirestore.instance
-            .collection('ofertes')
-            .doc(ofertaId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          // Mostra indicador de càrrega
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                        // Extreiem els camps
+                        final String titol = data['titol'] as String? ?? '';
+                        final String empresa =
+                            data['empresa'] as String? ?? '';
+                        final String ubicacio =
+                            data['ubicacio'] as String? ?? '';
+                        final String descripcio =
+                            data['descripcio'] as String? ?? '';
+                        final String modalidad =
+                            _capitalize(data['modalidad'] as String? ?? '');
+                        final bool dual = data['dualIntensiva'] as bool? ?? false;
+                        final bool remunerada =
+                            data['remunerada'] as bool? ?? false;
+                        final String durRaw =
+                            data['duracion'] as String? ?? 'meses0_3';
+                        final String duracion = durRaw == 'meses0_3'
+                            ? '0-3 mesos'
+                            : durRaw == 'meses3_6'
+                                ? '3-6 mesos'
+                                : '6-12 mesos';
+                        final bool expReq =
+                            data['experienciaRequerida'] as bool? ?? false;
+                        final String jornada =
+                            _capitalize(data['jornada'] as String? ?? '');
+                        final List<String> cursos = List<String>.from(
+                            data['cursosDestinatarios'] as List<dynamic>? ??
+                                []);
+                        final List<String> tags = List<String>.from(
+                            data['tags'] as List<dynamic>? ?? []);
 
-          // Si no hi ha dades o l’oferta no existeix
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Oferta no trobada.'));
-          }
-
-          // Extreu les dades de l’oferta
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Empresa
-                Text('Empresa: ${data['empresa']}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    )),
-                const SizedBox(height: 8),
-
-                // Ubicació
-                Text('Ubicació: ${data['ubicacio']}',
-                    style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 20),
-
-                // Descripció
-                const Text(
-                  'Descripció:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  data['descripcio'],
-                  style: const TextStyle(fontSize: 15),
-                ),
-
-                const Spacer(),
-
-                // Secció per aplicar a l’oferta
-                Center(
-                  child: Consumer<OfferApplicationService>(
-                    builder: (context, applicationService, _) {
-                      final aplicada =
-                          applicationService.jaAplicada(ofertaId);
-
-                      // Si ja s'ha aplicat, mostra icona i text
-                      return aplicada
-                          ? const Column(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Capçalera amb tornar i títol
+                            Row(
                               children: [
-                                Icon(Icons.check_circle,
-                                    color: Colors.green, size: 48),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Ja has aplicat a aquesta oferta',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w500,
+                                IconButton(
+                                  icon:
+                                      const Icon(Icons.arrow_back, color: Colors.blueAccent),
+                                  onPressed: () =>
+                                      Navigator.pushReplacementNamed(
+                                          context, AppRoutes.homeEstudiant),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    titol,
+                                    style: const TextStyle(
+                                        fontSize: 20, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
-                            )
-                          : ElevatedButton.icon(
-                              // Botó per aplicar
-                              icon: const Icon(Icons.send),
-                              label: const Text('Aplicar'),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(50),
-                                backgroundColor: Colors.blueAccent,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildDetailRow('Empresa', empresa),
+                            _buildDetailRow('Ubicació', ubicacio),
+                            const Divider(),
+                            _buildDetailRow('Modalitat', modalidad),
+                            _buildDetailRow('Dual intensiva', dual ? 'Sí' : 'No'),
+                            _buildDetailRow('Remunerada', remunerada ? 'Sí' : 'No'),
+                            _buildDetailRow('Duració', duracion),
+                            _buildDetailRow(
+                                'Experiència requerida', expReq ? 'Sí' : 'No'),
+                            _buildDetailRow('Jornada', jornada),
+                            if (cursos.isNotEmpty) _buildChips('Cursos', cursos),
+                            if (tags.isNotEmpty) _buildChips('Interessos', tags),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Descripció:',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
                               ),
-                              onPressed: () => _mostrarDialogAplicacio(
-                                context,
-                                ofertaId,
-                                data['titol'],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              descripcio,
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                            const SizedBox(height: 24),
+                            Center(
+                              child: Consumer<OfferApplicationService>(
+                                builder: (context, applicationService, _) {
+                                  final aplicada =
+                                      applicationService.jaAplicada(_ofertaId);
+                                  return aplicada
+                                      ? const Column(
+                                          children: [
+                                            Icon(Icons.check_circle,
+                                                color: Colors.green, size: 48),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Ja has aplicat a aquesta oferta',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : ElevatedButton.icon(
+                                          icon: const Icon(Icons.send),
+                                          label: const Text('Aplicar'),
+                                          style: ElevatedButton.styleFrom(
+                                            minimumSize:
+                                                const Size.fromHeight(50),
+                                            backgroundColor:
+                                                Colors.orangeAccent,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                            ),
+                                          ),
+                                          onPressed: () => _mostrarDialogAplicacio(
+                                            context,
+                                            _ofertaId,
+                                            titol,
+                                          ),
+                                        );
+                                },
                               ),
-                            );
-                    },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RichText(
+        text: TextSpan(
+          text: '$label: ',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+          children: [
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w400),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
+
+  Widget _buildChips(String label, List<String> items) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label:',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            children: items
+                .map((item) => Chip(
+                      label: Text(item, style: const TextStyle(fontSize: 13)),
+                      backgroundColor: Colors.orange.shade100,
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _capitalize(String s) =>
+      s.isEmpty ? '' : '${s[0].toUpperCase()}${s.substring(1)}';
 }
