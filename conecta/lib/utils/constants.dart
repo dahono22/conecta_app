@@ -34,4 +34,41 @@ class Constants {
     'Medio Ambiente y Sostenibilidad',
     'Derecho',
   ];
+
+  /// Modalidades de las ofertas
+  static const List<String> modalidadOptions = [
+    'Totes',
+    'Presencial',
+    'Remoto',
+    'Hibrido',
+  ];
+
+  /// Duraciones disponibles para las ofertas
+  static const List<String> duracionOptions = [
+    'Tots',
+    '0-3 mesos',
+    '3-6 mesos',
+    '6-12 mesos',
+  ];
+
+  /// Jornadas disponibles
+  static const List<String> jornadaOptions = [
+    'Totes',
+    'Matí',
+    'Tarda',
+  ];
+
+  /// Opciones de fecha de publicación
+  static const List<String> fechaPublicacionOptions = [
+    'Totes',
+    'Últimes 24h',
+    'Setmana passada',
+    'Mes passat',
+  ];
+
+  /// Cursos destinatarios
+  static const List<String> cursosOptions = [
+    '1r curs',
+    '2º curs',
+  ];
 }
