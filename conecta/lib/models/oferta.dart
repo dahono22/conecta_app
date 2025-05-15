@@ -2,21 +2,36 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Classe que representa una oferta de pràctiques publicada per una empresa.
-/// Aquesta informació es desa i es recupera de la base de dades de Firestore.
-class Oferta {
-  final String id;               // ID del document a Firestore
-  final String empresaId;        // ID únic de l'empresa que publica l'oferta
-  final String empresa;          // Nom visible de l'empresa
-  final String titol;            // Títol de l'oferta de pràctiques
-  final String descripcio;       // Descripció detallada de la feina o projecte ofert
-  final String requisits;        // Requisits que ha de complir l'estudiant
-  final String ubicacio;         // Ubicació física (o remota) de les pràctiques
-  final DateTime dataPublicacio; // Data en què es va publicar l'oferta
-  final String estat;            // Estat de validació: 'pendent', 'publicada', 'rebutjada'
-  final List<String> tags;       // Tags/interessos predefinits associats a l'oferta
+/// Modalidades disponibles para la oferta
+enum Modalidad { presencial, remoto, hibrido }
 
-  /// Constructor de la classe Oferta
+/// Duraciones predefinidas
+enum DuracionOferta { meses0_3, meses3_6, meses6_12 }
+
+/// Jornada de la oferta
+enum Jornada { manana, tarde }
+
+/// Clase que representa una oferta de prácticas publicada por una empresa.
+/// Esta información se guarda y se recupera de Firestore.
+class Oferta {
+  final String id;                       // ID del documento en Firestore
+  final String empresaId;                // ID de la empresa
+  final String empresa;                  // Nombre visible de la empresa
+  final String titol;                    // Título de la oferta
+  final String descripcio;               // Descripción detallada
+  final String requisits;                // Requisitos para el estudiante
+  final String ubicacio;                 // Ubicación física o remota
+  final DateTime dataPublicacio;         // Fecha de publicación
+  final String estat;                    // 'pendent', 'publicada', 'rebutjada'
+  final List<String> tags;               // Tags/intereses asociados
+  final Modalidad modalidad;             // Modalidad (presencial/remoto/híbrido)
+  final bool dualIntensiva;              // ¿Es dual intensiva?
+  final bool remunerada;                 // ¿Tiene remuneración?
+  final DuracionOferta duracion;         // Duración de la oferta
+  final bool experienciaRequerida;       // ¿Requiere experiencia?
+  final Jornada jornada;                 // Jornada (mañana/tarde)
+  final List<String> cursosDestinatarios;// Cursos a los que va dirigida (1r, 2º, ...)
+
   Oferta({
     required this.id,
     required this.empresaId,
@@ -28,25 +43,57 @@ class Oferta {
     required this.dataPublicacio,
     required this.estat,
     List<String>? tags,
-  }) : tags = tags ?? [];
+    required this.modalidad,
+    required this.dualIntensiva,
+    required this.remunerada,
+    required this.duracion,
+    required this.experienciaRequerida,
+    required this.jornada,
+    List<String>? cursosDestinatarios,
+  })  : tags = tags ?? [],
+        cursosDestinatarios = cursosDestinatarios ?? [];
 
-  /// Crea una instància d'Oferta a partir d’un Map de Firestore.
   factory Oferta.fromMap(Map<String, dynamic> data, String id) {
+    String _getString(Map<String, dynamic> d, String key, String def) =>
+        (d[key] as String?)?.toLowerCase() ?? def;
+
+    Modalidad modalidad = Modalidad.values.firstWhere(
+      (e) => e.toString().split('.').last == _getString(data, 'modalidad', 'presencial'),
+      orElse: () => Modalidad.presencial,
+    );
+
+    DuracionOferta duracion = DuracionOferta.values.firstWhere(
+      (e) => e.toString().split('.').last == _getString(data, 'duracion', 'meses0_3'),
+      orElse: () => DuracionOferta.meses0_3,
+    );
+
+    Jornada jornada = Jornada.values.firstWhere(
+      (e) => e.toString().split('.').last == _getString(data, 'jornada', 'manana'),
+      orElse: () => Jornada.manana,
+    );
+
     return Oferta(
       id: id,
-      empresaId: data['empresaId'] ?? '',
-      empresa: data['empresa'] ?? '',
-      titol: data['titol'] ?? '',
-      descripcio: data['descripcio'] ?? '',
-      requisits: data['requisits'] ?? '',
-      ubicacio: data['ubicacio'] ?? '',
+      empresaId: data['empresaId'] as String? ?? '',
+      empresa: data['empresa'] as String? ?? '',
+      titol: data['titol'] as String? ?? '',
+      descripcio: data['descripcio'] as String? ?? '',
+      requisits: data['requisits'] as String? ?? '',
+      ubicacio: data['ubicacio'] as String? ?? '',
       dataPublicacio: (data['dataPublicacio'] as Timestamp).toDate(),
-      estat: data['estat'] ?? 'pendent',
-      tags: List<String>.from(data['tags'] ?? []),
+      estat: data['estat'] as String? ?? 'pendent',
+      tags: List<String>.from(data['tags'] as List<dynamic>? ?? []),
+      modalidad: modalidad,
+      dualIntensiva: data['dualIntensiva'] as bool? ?? false,
+      remunerada: data['remunerada'] as bool? ?? false,
+      duracion: duracion,
+      experienciaRequerida: data['experienciaRequerida'] as bool? ?? false,
+      jornada: jornada,
+      cursosDestinatarios:
+          List<String>.from(data['cursosDestinatarios'] as List<dynamic>? ?? []),
     );
   }
 
-  /// Converteix l’objecte Oferta a un Map per desar-lo a Firestore.
   Map<String, dynamic> toMap() {
     return {
       'empresaId': empresaId,
@@ -58,6 +105,13 @@ class Oferta {
       'dataPublicacio': dataPublicacio,
       'estat': estat,
       'tags': tags,
+      'modalidad': modalidad.toString().split('.').last,
+      'dualIntensiva': dualIntensiva,
+      'remunerada': remunerada,
+      'duracion': duracion.toString().split('.').last,
+      'experienciaRequerida': experienciaRequerida,
+      'jornada': jornada.toString().split('.').last,
+      'cursosDestinatarios': cursosDestinatarios,
     };
   }
 }
