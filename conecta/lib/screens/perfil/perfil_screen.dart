@@ -10,7 +10,7 @@ import '../../models/usuari.dart';
 import '../../routes/app_routes.dart';
 import 'perfil_controller.dart';
 import '../../services/offer_application_service.dart';
-import '../../utils/constants.dart'; // import constants
+import '../../utils/constants.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -23,8 +23,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
   final _formKey = GlobalKey<FormState>();
   late PerfilController _controller;
   late Future<void> _carregarAplicacionsFuture;
-  List<String> _selectedInterests = []; // track selected interests
-  String? _interestsError; // error message
+  List<String> _selectedInterests = [];
+  String? _interestsError;
 
   @override
   void initState() {
@@ -32,11 +32,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _controller = PerfilController(context);
     final authService = Provider.of<AuthService>(context, listen: false);
     final user = authService.usuariActual!;
-    _selectedInterests = List.from(user.intereses); // initialize
-    final userId = user.id;
-    _carregarAplicacionsFuture = userId.isNotEmpty
+    _selectedInterests = List.from(user.intereses);
+    _carregarAplicacionsFuture = user.id.isNotEmpty
         ? Provider.of<OfferApplicationService>(context, listen: false)
-            .carregarAplicacions(userId)
+            .carregarAplicacions(user.id)
         : Future.value();
   }
 
@@ -138,6 +137,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
     });
   }
 
+  void _logout() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final applicationService =
+        Provider.of<OfferApplicationService>(context, listen: false);
+    authService.logout();
+    applicationService.clear();
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.login,
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final usuari = context.watch<AuthService>().usuariActual!;
@@ -169,27 +181,30 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back,
-                              color: Colors.blueAccent),
-                          onPressed: () {
-                            final ruta = isEmpresa
-                                ? AppRoutes.homeEmpresa
-                                : AppRoutes.homeEstudiant;
-                            Navigator.pushReplacementNamed(context, ruta);
-                          },
-                          tooltip: 'Tornar',
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.blueAccent),
+                            onPressed: () {
+                              final ruta = isEmpresa
+                                  ? AppRoutes.homeEmpresa
+                                  : AppRoutes.homeEstudiant;
+                              Navigator.pushReplacementNamed(context, ruta);
+                            },
+                            tooltip: 'Tornar',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.logout, color: Colors.redAccent),
+                            onPressed: _logout,
+                            tooltip: 'Tancar sessió',
+                          ),
+                        ],
                       ),
 
                       Text(
-                        isEmpresa
-                            ? 'Perfil de l\'empresa'
-                            : 'Perfil de l\'estudiant',
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                        isEmpresa ? 'Perfil de l\'empresa' : 'Perfil de l\'estudiant',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 24),
 
@@ -197,9 +212,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         controller: _controller.nomController,
                         decoration: _inputDecoration('Nom complet'),
                         validator: (value) =>
-                            value == null || value.isEmpty
-                                ? 'Camp obligatori'
-                                : null,
+                            value == null || value.isEmpty ? 'Camp obligatori' : null,
                       ),
                       const SizedBox(height: 16),
 
@@ -207,15 +220,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         controller: _controller.emailController,
                         decoration: _inputDecoration('Correu electrònic'),
                         validator: (value) =>
-                            value == null || value.isEmpty
-                                ? 'Camp obligatori'
-                                : null,
+                            value == null || value.isEmpty ? 'Camp obligatori' : null,
                       ),
                       const SizedBox(height: 8),
 
                       ElevatedButton.icon(
-                        onPressed: () =>
-                            _controller.enviarVerificacioANouCorreu(),
+                        onPressed: _controller.enviarVerificacioANouCorreu,
                         icon: const Icon(Icons.email_outlined),
                         label: const Text('Verificar nou correu'),
                         style: ElevatedButton.styleFrom(
@@ -227,7 +237,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ),
 
-                      // Interesses per estudiants
                       if (!isEmpresa) ...[
                         const SizedBox(height: 20),
                         Align(
@@ -267,8 +276,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _controller.descripcioController,
-                          decoration: _inputDecoration(
-                              'Descripció de l\'empresa'),
+                          decoration: _inputDecoration('Descripció de l\'empresa'),
                           maxLines: 3,
                         ),
                         const SizedBox(height: 8),
@@ -281,8 +289,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         const Text('Currículum (enllaç URL):',
-                            style:
-                                TextStyle(fontWeight: FontWeight.bold)),
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _controller.cvUrlController,
@@ -303,8 +310,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
                           Row(
                             children: [
-                              const Icon(Icons.check_circle,
-                                  color: Colors.green),
+                              const Icon(Icons.check_circle, color: Colors.green),
                               const SizedBox(width: 8),
                               const Text('Enllaç actual:'),
                               const Spacer(),
@@ -315,8 +321,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   final uri = Uri.parse(usuari.cvUrl!);
                                   if (await canLaunchUrl(uri)) {
                                     await launchUrl(uri,
-                                        mode: LaunchMode
-                                            .externalApplication);
+                                        mode: LaunchMode.externalApplication);
                                   }
                                 },
                               ),
@@ -354,7 +359,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                       ElevatedButton.icon(
                         onPressed: () {
-                          // Validació d'interessos
                           if (!isEmpresa && _selectedInterests.isEmpty) {
                             setState(() => _interestsError = 'Selecciona fins a 1 i 3 interessos');
                             return;
