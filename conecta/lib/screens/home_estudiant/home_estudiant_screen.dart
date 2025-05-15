@@ -2,8 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../services/auth_service.dart';
 import '../../services/offer_service.dart';
+import '../../services/offer_application_service.dart';
 import '../../models/oferta.dart';
 import '../../routes/app_routes.dart';
 import '../chat/converses_alumne_screen.dart';
@@ -65,14 +68,15 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.usuariActual!;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Fondo
           Image.asset('assets/background.png', fit: BoxFit.cover),
           Container(color: const Color.fromRGBO(0, 0, 0, 0.5)),
-
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -93,7 +97,7 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Logo y acciones
+                      // Logo
                       Center(
                         child: Image.asset(
                           'assets/images/logo4.png',
@@ -103,22 +107,26 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                       ),
                       const SizedBox(height: 30),
 
-                      // Secció: Ofertes recomanades
+                      // Ofertes recomanades
                       const Text(
                         'Ofertes per a tu',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
-
-                      // Loading / Error / Empty
                       if (_isLoadingOffers)
                         const Center(child: CircularProgressIndicator())
                       else if (_offersError != null)
-                        Center(child: Text(_offersError!, style: const TextStyle(color: Colors.redAccent)))
+                        Center(
+                          child: Text(
+                            _offersError!,
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
+                        )
                       else if (_recommendedOffers.isEmpty)
-                        const Center(child: Text('No hi ha ofertes per als teus interessos.'))
+                        const Center(
+                          child: Text('No hi ha ofertes per als teus interessos.'),
+                        )
                       else
-                        // Lista vertical de tarjetas con degradado naranja-blanco y viñetas
                         Column(
                           children: _recommendedOffers.map((oferta) {
                             return Container(
@@ -142,10 +150,8 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    '•  ',
-                                    style: TextStyle(fontSize: 24, height: 1.1),
-                                  ),
+                                  const Text('•  ',
+                                      style: TextStyle(fontSize: 24, height: 1.1)),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,23 +159,22 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                                         Text(
                                           oferta.titol,
                                           style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '${oferta.empresa} · ${oferta.ubicacio}',
                                           style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.black54,
-                                          ),
+                                              fontSize: 14,
+                                              color: Colors.black54),
                                         ),
                                         const SizedBox(height: 8),
                                         Align(
                                           alignment: Alignment.bottomRight,
                                           child: GestureDetector(
-                                            onTap: () => Navigator.pushNamed(
+                                            onTap: () =>
+                                                Navigator.pushNamed(
                                               context,
                                               AppRoutes.detallOferta,
                                               arguments: oferta.id,
@@ -177,9 +182,8 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                                             child: const Text(
                                               'Veure detall ›',
                                               style: TextStyle(
-                                                color: Colors.orangeAccent,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                                  color: Colors.orangeAccent,
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                           ),
                                         ),
@@ -193,21 +197,127 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                         ),
 
                       const SizedBox(height: 20),
-                      // Botón "Veure totes les ofertes"
+
+                      // Botó "Veure totes les ofertes"
                       Center(
                         child: ElevatedButton(
-                          onPressed: () => Navigator.pushNamed(context, AppRoutes.llistatOfertes),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, AppRoutes.llistatOfertes),
                           style: ElevatedButton.styleFrom(
                             elevation: 10,
-                            backgroundColor: Colors.amber,
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                            backgroundColor: Colors.orangeAccent,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 24),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            shadowColor: const Color.fromRGBO(0, 0, 0, 0.3),
+                                borderRadius: BorderRadius.circular(18)),
                           ),
-                          child: const Text('Veure totes les ofertes'),
+                          child: Image.asset(
+                            'assets/images/veure_totes_les_ofertes.png',
+                            height: 40,
+                          ),
                         ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Ofertes aplicades
+                      const Text(
+                        'Ofertes aplicades',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 1) Stream de les aplicacions de l'usuari
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('aplicacions')
+                            .where('usuariId', isEqualTo: user.id)
+                            .snapshots(),
+                        builder: (context, snapApps) {
+                          if (snapApps.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          final apps = snapApps.data!.docs;
+                          if (apps.isEmpty) {
+                            return const Center(
+                              child:
+                                  Text('Encara no has aplicat a cap oferta.'),
+                            );
+                          }
+                          // Map d'estats per ofertaId
+                          final Map<String, String> estados = {
+                            for (var a in apps)
+                              (a.get('ofertaId') as String):
+                                  (a.get('estat') as String)
+                          };
+                          final ofertaIds = estados.keys.toList();
+
+                          // 2) Stream de les ofertes corresponents
+                          return StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('ofertes')
+                                .where(FieldPath.documentId,
+                                    whereIn: ofertaIds)
+                                .snapshots(),
+                            builder: (context, snapOff) {
+                              if (snapOff.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              final offerDocs = snapOff.data!.docs;
+                              return Column(
+                                children: offerDocs.map((offerDoc) {
+                                  final data = offerDoc.data()
+                                      as Map<String, dynamic>;
+                                  final id = offerDoc.id;
+                                  final estat = estados[id] ?? 'Nou';
+
+                                  Color estatColor;
+                                  switch (estat) {
+                                    case 'Acceptada':
+                                      estatColor = Colors.green;
+                                      break;
+                                    case 'Rebutjada':
+                                      estatColor = Colors.red;
+                                      break;
+                                    default:
+                                      estatColor = Colors.orange;
+                                  }
+
+                                  return Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    child: ListTile(
+                                      title: Text(
+                                        data['titol'] ?? '',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Text(
+                                          '${data['empresa'] ?? ''} · ${data['ubicacio'] ?? ''}'),
+                                      trailing: Text(
+                                        estat,
+                                        style: TextStyle(color: estatColor),
+                                      ),
+                                      onTap: () => Navigator.pushNamed(
+                                        context,
+                                        AppRoutes.detallOferta,
+                                        arguments: id,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -216,7 +326,7 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
             ),
           ),
 
-          // FAB de Perfil
+          // FAB Perfil
           Positioned(
             bottom: 20,
             left: 20,
@@ -230,7 +340,7 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
               child: const Icon(Icons.person, color: Colors.blueAccent),
             ),
           ),
-          // FAB de Converses
+          // FAB Converses
           Positioned(
             bottom: 20,
             right: 20,
