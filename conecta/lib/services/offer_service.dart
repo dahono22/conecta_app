@@ -8,20 +8,25 @@ import '../models/oferta.dart';
 class OfferService with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Crea una nova oferta a Firestore, incloent-hi una llista de camps relacionats
+  /// Crea una nova oferta a Firestore, incloent-hi tots els camps nous
   Future<void> crearOferta({
     required String titol,
     required String descripcio,
     required String requisits,
     required String ubicacio,
     required String empresaId,
-    required List<String> campos, // Llista de camps relacionats
+    required List<String> campos,
+    required String modalidad,
+    required bool dualIntensiva,
+    required bool remunerada,
+    required String duracion,
+    required bool experienciaRequerida,
+    required String jornada,
+    required List<String> cursosDestinatarios,
   }) async {
-    // Obtenim el nom de l'empresa a partir del seu ID
     final empresaDoc = await _db.collection('usuaris').doc(empresaId).get();
     final empresaNom = empresaDoc.data()?['nom'] ?? 'Empresa desconeguda';
 
-    // Definim l'objecte de la nova oferta
     final novaOferta = {
       'titol': titol,
       'descripcio': descripcio,
@@ -31,16 +36,55 @@ class OfferService with ChangeNotifier {
       'empresa': empresaNom,
       'dataPublicacio': FieldValue.serverTimestamp(),
       'estat': 'publicada',
-      'campos': campos, // Guardem els camps seleccionats
+      'tags': campos,
+      'modalidad': modalidad,
+      'dualIntensiva': dualIntensiva,
+      'remunerada': remunerada,
+      'duracion': duracion,
+      'experienciaRequerida': experienciaRequerida,
+      'jornada': jornada,
+      'cursosDestinatarios': cursosDestinatarios,
     };
 
-    // Desa la nova oferta a Firestore
     await _db.collection('ofertes').add(novaOferta);
+  }
+
+  /// Actualitza una oferta existent amb els nous camps
+  Future<void> updateOferta({
+    required String ofertaId,
+    required String titol,
+    required String descripcio,
+    required String requisits,
+    required String ubicacio,
+    required List<String> campos,
+    required String modalidad,
+    required bool dualIntensiva,
+    required bool remunerada,
+    required String duracion,
+    required bool experienciaRequerida,
+    required String jornada,
+    required List<String> cursosDestinatarios,
+  }) async {
+    final data = {
+      'titol': titol,
+      'descripcio': descripcio,
+      'requisits': requisits,
+      'ubicacio': ubicacio,
+      'tags': campos,
+      'modalidad': modalidad,
+      'dualIntensiva': dualIntensiva,
+      'remunerada': remunerada,
+      'duracion': duracion,
+      'experienciaRequerida': experienciaRequerida,
+      'jornada': jornada,
+      'cursosDestinatarios': cursosDestinatarios,
+    };
+
+    await _db.collection('ofertes').doc(ofertaId).update(data);
   }
 
   /// Retorna les 3 ofertes més recents que coincideixin amb algun dels camps de l'usuari
   Future<List<Oferta>> getRecommendedOffers(List<String> userCampos) async {
-    // Firestore array-contains-any només pot rebre fins a 10 valors
     final slice = userCampos.length > 10
         ? userCampos.sublist(0, 10)
         : userCampos;
@@ -48,7 +92,7 @@ class OfferService with ChangeNotifier {
     final query = await _db
         .collection('ofertes')
         .where('estat', isEqualTo: 'publicada')
-        .where('campos', arrayContainsAny: slice)
+        .where('tags', arrayContainsAny: slice)
         .orderBy('dataPublicacio', descending: true)
         .limit(3)
         .get();
@@ -64,7 +108,7 @@ class OfferService with ChangeNotifier {
     final query = await _db
         .collection('ofertes')
         .where('estat', isEqualTo: 'publicada')
-        .where('campos', arrayContainsAny: slice)
+        .where('tags', arrayContainsAny: slice)
         .orderBy('dataPublicacio', descending: true)
         .get();
     return query.docs
