@@ -42,6 +42,7 @@ flutter:
     - assets/images/logo4.png
     - assets/images/logo5.png
     - assets/images/veure_totes_les_ofertes.png
+    - assets/avatars/
 
 flutter_native_splash:
   color: "#ffffff"
