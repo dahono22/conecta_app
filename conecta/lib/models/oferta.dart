@@ -17,6 +17,7 @@ class Oferta {
   final String id;                       // ID del documento en Firestore
   final String empresaId;                // ID de la empresa
   final String empresa;                  // Nombre visible de la empresa
+  final String? empresaAvatar;           // Avatar/logo de la empresa (clave)
   final String titol;                    // Título de la oferta
   final String descripcio;               // Descripción detallada
   final String requisits;                // Requisitos para el estudiante
@@ -36,6 +37,7 @@ class Oferta {
     required this.id,
     required this.empresaId,
     required this.empresa,
+    this.empresaAvatar,
     required this.titol,
     required this.descripcio,
     required this.requisits,
@@ -76,6 +78,7 @@ class Oferta {
       id: id,
       empresaId: data['empresaId'] as String? ?? '',
       empresa: data['empresa'] as String? ?? '',
+      empresaAvatar: data['empresaAvatar'] as String?,    // leemos el avatar
       titol: data['titol'] as String? ?? '',
       descripcio: data['descripcio'] as String? ?? '',
       requisits: data['requisits'] as String? ?? '',
@@ -98,6 +101,7 @@ class Oferta {
     return {
       'empresaId': empresaId,
       'empresa': empresa,
+      'empresaAvatar': empresaAvatar,          // guardamos el avatar
       'titol': titol,
       'descripcio': descripcio,
       'requisits': requisits,

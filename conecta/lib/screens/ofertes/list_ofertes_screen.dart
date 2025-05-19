@@ -448,33 +448,40 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                               .data() as Map<String, dynamic>;
                           final id = filtrades[index].id;
                           return Card(
-                            shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(16)),
-                            elevation: 3,
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 8),
-                            child: ListTile(
-                              contentPadding:
-                                  const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 10),
-                              title: Text(
-                                data['titol'] ?? '',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600),
-                              ),
-                              subtitle: Text(
-                                '${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}',
-                              ),
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.detallOferta,
-                                  arguments: id,
-                                );
-                              },
-                            ),
-                          );
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  elevation: 3,
+  margin: const EdgeInsets.symmetric(vertical: 8),
+  child: ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+
+    // <-- Nuevo: mostramos el avatar de la empresa si existe
+    leading: () {
+      final avatarKey = data['empresaAvatar'] as String?;
+      if (avatarKey != null && avatarKey.isNotEmpty) {
+        return CircleAvatar(
+          backgroundImage: AssetImage('assets/avatars/$avatarKey.png'),
+        );
+      }
+      return null;
+    }(),
+
+    title: Text(
+      data['titol'] ?? '',
+      style: const TextStyle(fontWeight: FontWeight.w600),
+    ),
+    subtitle: Text(
+      '${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}',
+    ),
+    onTap: () {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.detallOferta,
+        arguments: id,
+      );
+    },
+  ),
+);
+
                         },
                       );
                     },

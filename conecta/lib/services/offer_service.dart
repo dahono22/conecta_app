@@ -24,8 +24,10 @@ class OfferService with ChangeNotifier {
     required String jornada,
     required List<String> cursosDestinatarios,
   }) async {
+    // Obtenim nom i avatar de l'empresa
     final empresaDoc = await _db.collection('usuaris').doc(empresaId).get();
     final empresaNom = empresaDoc.data()?['nom'] ?? 'Empresa desconeguda';
+    final empresaAvatar = empresaDoc.data()?['avatar'] as String? ?? '';
 
     final novaOferta = {
       'titol': titol,
@@ -34,6 +36,7 @@ class OfferService with ChangeNotifier {
       'ubicacio': ubicacio,
       'empresaId': empresaId,
       'empresa': empresaNom,
+      'empresaAvatar': empresaAvatar,      // ← nou camp
       'dataPublicacio': FieldValue.serverTimestamp(),
       'estat': 'publicada',
       'tags': campos,
@@ -65,6 +68,18 @@ class OfferService with ChangeNotifier {
     required String jornada,
     required List<String> cursosDestinatarios,
   }) async {
+    // Primer llegim l'oferta per saber quina empresa la té
+    final ofertaSnap = await _db.collection('ofertes').doc(ofertaId).get();
+    final existing = ofertaSnap.data() ?? {};
+    final existingEmpresaId = existing['empresaId'] as String? ?? '';
+
+    // Obtenim l'avatar actual de l'empresa
+    String empresaAvatar = '';
+    if (existingEmpresaId.isNotEmpty) {
+      final empresaDoc = await _db.collection('usuaris').doc(existingEmpresaId).get();
+      empresaAvatar = empresaDoc.data()?['avatar'] as String? ?? '';
+    }
+
     final data = {
       'titol': titol,
       'descripcio': descripcio,
@@ -78,6 +93,7 @@ class OfferService with ChangeNotifier {
       'experienciaRequerida': experienciaRequerida,
       'jornada': jornada,
       'cursosDestinatarios': cursosDestinatarios,
+      'empresaAvatar': empresaAvatar,      // ← actualitzem també l'avatar
     };
 
     await _db.collection('ofertes').doc(ofertaId).update(data);

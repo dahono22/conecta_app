@@ -22,7 +22,6 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Un cop tenim el context, llegim l'argument i carreguem aplicacions
     _ofertaId = ModalRoute.of(context)!.settings.arguments as String;
     final authService = Provider.of<AuthService>(context, listen: false);
     _loadAppsFuture = Provider.of<OfferApplicationService>(
@@ -40,7 +39,6 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
         Provider.of<OfferApplicationService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
     final usuari = authService.usuariActual!;
-    // Tornem a comprovar directament a Firestore
     final jaAplicada = await applicationService.jaAplicadaFirestore(
       usuariId: usuari.id,
       ofertaId: idOferta,
@@ -126,14 +124,12 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
     return FutureBuilder<void>(
       future: _loadAppsFuture,
       builder: (context, snap) {
-        // Mentre es carreguen les aplicacions
         if (snap.connectionState != ConnectionState.done) {
           return const Scaffold(
             backgroundColor: Color(0xFFF4F7FA),
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        // Un cop carregat, mostrem la UI
         return Scaffold(
           body: Stack(
             fit: StackFit.expand,
@@ -173,9 +169,9 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
                           return const Center(child: Text('Oferta no trobada.'));
                         }
                         final data =
-                            snapshot.data!.data() as Map<String, dynamic>;
+                            snapshot.data!.data()! as Map<String, dynamic>;
 
-                        // Extreiem els camps
+                        // Extreiem camps de l'oferta
                         final String titol = data['titol'] as String? ?? '';
                         final String empresa =
                             data['empresa'] as String? ?? '';
@@ -200,10 +196,26 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
                         final String jornada =
                             _capitalize(data['jornada'] as String? ?? '');
                         final List<String> cursos = List<String>.from(
-                            data['cursosDestinatarios'] as List<dynamic>? ??
-                                []);
+                            data['cursosDestinatarios'] as List<dynamic>? ?? []);
                         final List<String> tags = List<String>.from(
                             data['tags'] as List<dynamic>? ?? []);
+
+                        // Clau de l'avatar emmagatzemada al document de l'oferta
+                        final String? empresaAvatar =
+                            data['empresaAvatar'] as String?;
+
+                        // 1) Definim un fallback per defecte
+                        String assetAvatar = 'assets/avatars/default.png';
+                        // 2) Si hi ha clau, la netegem de ruta o ".png" extra
+                        if (empresaAvatar != null && empresaAvatar.isNotEmpty) {
+                          var raw = empresaAvatar;
+                          if (raw.contains('/')) raw = raw.split('/').last;
+                          raw = raw.replaceAll(
+                            RegExp(r'\.png$', caseSensitive: false),
+                            '',
+                          );
+                          assetAvatar = 'assets/avatars/$raw.png';
+                        }
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,8 +224,8 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon:
-                                      const Icon(Icons.arrow_back, color: Colors.blueAccent),
+                                  icon: const Icon(Icons.arrow_back,
+                                      color: Colors.blueAccent),
                                   onPressed: () =>
                                       Navigator.pushReplacementNamed(
                                           context, AppRoutes.homeEstudiant),
@@ -223,21 +235,35 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
                                   child: Text(
                                     titol,
                                     style: const TextStyle(
-                                        fontSize: 20, fontWeight: FontWeight.bold),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
+
+                            // Avatar de l'empresa amb la ruta normalitzada
+                            Center(
+                              child: CircleAvatar(
+                                radius: 40,
+                                backgroundImage: AssetImage(assetAvatar),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Detalls de l'oferta
                             _buildDetailRow('Empresa', empresa),
                             _buildDetailRow('Ubicació', ubicacio),
                             const Divider(),
                             _buildDetailRow('Modalitat', modalidad),
-                            _buildDetailRow('Dual intensiva', dual ? 'Sí' : 'No'),
-                            _buildDetailRow('Remunerada', remunerada ? 'Sí' : 'No'),
-                            _buildDetailRow('Duració', duracion),
                             _buildDetailRow(
-                                'Experiència requerida', expReq ? 'Sí' : 'No'),
+                                'Dual intensiva', dual ? 'Sí' : 'No'),
+                            _buildDetailRow(
+                                'Remunerada', remunerada ? 'Sí' : 'No'),
+                            _buildDetailRow('Duració', duracion),
+                            _buildDetailRow('Experiència requerida',
+                                expReq ? 'Sí' : 'No'),
                             _buildDetailRow('Jornada', jornada),
                             if (cursos.isNotEmpty) _buildChips('Cursos', cursos),
                             if (tags.isNotEmpty) _buildChips('Interessos', tags),
@@ -256,6 +282,8 @@ class _DetailOfertaScreenState extends State<DetailOfertaScreen> {
                               style: const TextStyle(fontSize: 15),
                             ),
                             const SizedBox(height: 24),
+
+                            // Botó d'aplicació
                             Center(
                               child: Consumer<OfferApplicationService>(
                                 builder: (context, applicationService, _) {

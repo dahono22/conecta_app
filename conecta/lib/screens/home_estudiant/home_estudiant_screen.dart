@@ -6,7 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../services/auth_service.dart';
 import '../../services/offer_service.dart';
-import '../../services/offer_application_service.dart';
 import '../../models/oferta.dart';
 import '../../routes/app_routes.dart';
 import '../chat/converses_alumne_screen.dart';
@@ -66,6 +65,45 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
     }
   }
 
+  /// Recupera la clau d'avatar des de Firestore per un usuari
+  Future<String?> _fetchEmpresaAvatar(String empresaId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('usuaris')
+        .doc(empresaId)
+        .get();
+    return doc.data()?['avatar'] as String?;
+  }
+
+  /// Crea un CircleAvatar amb la imatge de l'empresa,
+  /// normalitzant ruta i extensió per evitar duplicats.
+  Widget _buildEmpresaAvatar(String empresaId, {double radius = 20}) {
+    return FutureBuilder<String?>(
+      future: _fetchEmpresaAvatar(empresaId),
+      builder: (context, snap) {
+        // Ruta per defecte
+        String assetPath = 'assets/avatars/default.png';
+
+        if (snap.hasData && (snap.data?.isNotEmpty ?? false)) {
+          String raw = snap.data!;
+
+          // Si ve amb ruta completa, quedem-nos només amb el nom de fitxer
+          if (raw.contains('/')) {
+            raw = raw.split('/').last;
+          }
+          // Eliminem qualsevol ".png" existent
+          raw = raw.replaceAll(RegExp(r'\.png$', caseSensitive: false), '');
+
+          assetPath = 'assets/avatars/$raw.png';
+        }
+
+        return CircleAvatar(
+          radius: radius,
+          backgroundImage: AssetImage(assetPath),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -81,7 +119,8 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
             child: Center(
               child: SingleChildScrollView(
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -110,7 +149,8 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                       // Ofertes recomanades
                       const Text(
                         'Ofertes per a tu',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style:
+                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
                       if (_isLoadingOffers)
@@ -150,11 +190,13 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('•  ',
-                                      style: TextStyle(fontSize: 24, height: 1.1)),
+                                  // Avatar de l'empresa
+                                  _buildEmpresaAvatar(oferta.empresaId, radius: 24),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           oferta.titol,
@@ -201,8 +243,8 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                       // Botó "Veure totes les ofertes"
                       Center(
                         child: ElevatedButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, AppRoutes.llistatOfertes),
+                          onPressed: () => Navigator.pushNamed(
+                              context, AppRoutes.llistatOfertes),
                           style: ElevatedButton.styleFrom(
                             elevation: 10,
                             backgroundColor: Colors.orangeAccent,
@@ -223,11 +265,11 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                       // Ofertes aplicades
                       const Text(
                         'Ofertes aplicades',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style:
+                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
 
-                      // 1) Stream de les aplicacions de l'usuari
                       StreamBuilder<QuerySnapshot>(
                         stream: FirebaseFirestore.instance
                             .collection('aplicacions')
@@ -243,11 +285,9 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                           final apps = snapApps.data!.docs;
                           if (apps.isEmpty) {
                             return const Center(
-                              child:
-                                  Text('Encara no has aplicat a cap oferta.'),
+                              child: Text('Encara no has aplicat a cap oferta.'),
                             );
                           }
-                          // Map d'estats per ofertaId
                           final Map<String, String> estados = {
                             for (var a in apps)
                               (a.get('ofertaId') as String):
@@ -255,7 +295,6 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                           };
                           final ofertaIds = estados.keys.toList();
 
-                          // 2) Stream de les ofertes corresponents
                           return StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('ofertes')
@@ -272,8 +311,8 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                               final offerDocs = snapOff.data!.docs;
                               return Column(
                                 children: offerDocs.map((offerDoc) {
-                                  final data = offerDoc.data()
-                                      as Map<String, dynamic>;
+                                  final data =
+                                      offerDoc.data() as Map<String, dynamic>;
                                   final id = offerDoc.id;
                                   final estat = estados[id] ?? 'Nou';
 
@@ -293,8 +332,12 @@ class _HomeEstudiantScreenState extends State<HomeEstudiantScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    margin: const EdgeInsets.only(bottom: 12),
+                                    margin:
+                                        const EdgeInsets.only(bottom: 12),
                                     child: ListTile(
+                                      leading: _buildEmpresaAvatar(
+                                          data['empresaId'] as String,
+                                          radius: 20),
                                       title: Text(
                                         data['titol'] ?? '',
                                         style: const TextStyle(

@@ -1,3 +1,5 @@
+// lib/services/offer_application_service.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -29,11 +31,12 @@ class OfferApplicationService with ChangeNotifier {
   }
 
   /// Aplica l'usuari [userId] a una oferta [idOferta].
-  /// Opcionalment, pot incloure un enllaç al CV [cvUrl].
+  /// Opcionalment, pot incloure un enllaç al CV [cvUrl] i la clau de l'avatar [usuariAvatar].
   Future<void> aplicarAOferta(
     String userId,
     String idOferta, {
     String? cvUrl,
+    String? usuariAvatar,
   }) async {
     _error = null; // Reinicia qualsevol error anterior
 
@@ -42,13 +45,15 @@ class OfferApplicationService with ChangeNotifier {
 
     try {
       // Desa la informació de l'aplicació a Firestore
-      await docRef.set({
+      final data = {
         'usuariId': userId,
         'ofertaId': idOferta,
         'timestamp': FieldValue.serverTimestamp(), // Marca la data del servidor
         'estat': 'Nou', // Estat inicial per al procés de selecció
         if (cvUrl != null && cvUrl.isNotEmpty) 'cvUrl': cvUrl, // Només si s'ha proporcionat
-      });
+        if (usuariAvatar != null && usuariAvatar.isNotEmpty) 'usuariAvatar': usuariAvatar, // Avatar de l'usuari
+      };
+      await docRef.set(data);
 
       // Afegeix l'oferta a la llista local d'aplicacions
       _ofertesAplicades.add(idOferta);
@@ -71,7 +76,7 @@ class OfferApplicationService with ChangeNotifier {
 
       // Afegeix totes les ofertes a la llista local
       for (final doc in snapshot.docs) {
-        _ofertesAplicades.add(doc['ofertaId']);
+        _ofertesAplicades.add(doc['ofertaId'] as String);
       }
 
       notifyListeners(); // Informa la UI que s'ha carregat la informació
