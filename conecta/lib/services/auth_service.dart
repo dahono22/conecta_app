@@ -21,7 +21,7 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Guarda (o actualiza) un usuario en Firestore, incluyendo sus intereses.
+  /// Guarda (o actualiza) un usuario en Firestore, incluyendo intereses y avatar.
   Future<void> desarUsuariFirestore(Usuari usuari) async {
     await _db
       .collection('usuaris')
@@ -33,13 +33,13 @@ class AuthService with ChangeNotifier {
         'rol': usuari.rol.name,
         'descripcio': usuari.descripcio ?? '',
         'cvUrl': usuari.cvUrl ?? '',
-        'fotoPerfilUrl': usuari.fotoPerfilUrl ?? '',
-        'intereses': usuari.intereses,  // Lista de intereses del usuario
+        'avatar': usuari.avatar,       // Ahora guardamos la clave del avatar
+        'intereses': usuari.intereses, // Lista de intereses del usuario
       }, SetOptions(merge: true));
   }
 
   /// Escucha en tiempo real los cambios en el documento de usuario en Firestore
-  /// y actualiza la propiedad [usuariActual], incluyendo sus intereses.
+  /// y actualiza la propiedad [usuariActual], incluyendo su avatar.
   void listenCanvisUsuari(String userId) {
     _usuariListener?.cancel();
     _usuariListener = _db
@@ -53,14 +53,12 @@ class AuthService with ChangeNotifier {
           id: d['id'] as String,
           nom: d['nom'] as String,
           email: d['email'] as String,
-          contrasenya: '',
-          rol: d['rol'] == 'empresa'
-              ? RolUsuari.empresa
-              : RolUsuari.estudiant,
+          contrasenya: '', // mantenemos vacío por seguridad
+          rol: d['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
           descripcio: d['descripcio'] as String?,
           cvUrl: d['cvUrl'] as String?,
-          fotoPerfilUrl: d['fotoPerfilUrl'] as String?,
-          intereses: List<String>.from(d['intereses'] ?? []),
+          avatar: d['avatar'] as String?,               // Leemos la clave del avatar
+          intereses: List<String>.from(d['intereses'] ?? <String>[]),
         );
         notifyListeners();
       });
@@ -81,7 +79,7 @@ class AuthService with ChangeNotifier {
       password: password,
     );
 
-    // 2) Construir objeto de usuario para Firestore, con intereses inicialmente vacíos
+    // 2) Construir objeto de usuario para Firestore
     final usuari = Usuari(
       id: cred.user!.uid,
       nom: nom,
@@ -90,7 +88,7 @@ class AuthService with ChangeNotifier {
       rol: rol,
       descripcio: descripcio ?? '',
       cvUrl: cvUrl ?? '',
-      fotoPerfilUrl: null,
+      avatar: null,       // Sin avatar inicial
       intereses: [],
     );
 
@@ -100,7 +98,6 @@ class AuthService with ChangeNotifier {
     // 4) Establecer usuario actual y comenzar a escuchar cambios
     _usuariActual = usuari;
     listenCanvisUsuari(usuari.id);
-    notifyListeners();
 
     return cred;
   }
@@ -126,7 +123,7 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Actualiza el email en Firebase Auth y en Firestore, mantiene intereses.
+  /// Actualiza el email en Firebase Auth y en Firestore, mantiene intereses y avatar.
   Future<void> actualitzarEmail(String nouEmail) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -135,7 +132,7 @@ class AuthService with ChangeNotifier {
         message: 'No hi ha cap usuari autenticat',
       );
     }
-    // 1) Actualiza en Auth verificando antes (evita deprecación)
+    // 1) Actualiza en Auth verificando antes
     await user.verifyBeforeUpdateEmail(nouEmail);
     // 2) Actualiza en Firestore
     await _db.collection('usuaris').doc(user.uid).update({'email': nouEmail});

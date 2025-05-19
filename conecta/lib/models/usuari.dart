@@ -6,7 +6,7 @@ enum RolUsuari {
   empresa,   // Usuari que publica ofertes
 }
 
-// Classe que representa un usuari dins de l'aplicació
+/// Classe que representa un usuari dins de l'aplicació
 class Usuari {
   final String id;               // ID únic de l'usuari (Firestore)
   final String nom;              // Nom de l'usuari
@@ -15,7 +15,7 @@ class Usuari {
   final RolUsuari rol;           // Rol dins de l'aplicació
   final String? descripcio;      // Descripció personal o corporativa
   final String? cvUrl;           // URL del CV (només estudiants)
-  final String? fotoPerfilUrl;   // URL de la foto de perfil (opcional)
+  final String? avatar;          // Clau de l'avatar triat (p.e. "company1", "studient2")
   final List<String> intereses;  // Llista d'interessos (fins a 3) per estudiants
 
   // Constructor principal
@@ -27,7 +27,7 @@ class Usuari {
     required this.rol,
     this.descripcio,
     this.cvUrl,
-    this.fotoPerfilUrl,
+    this.avatar,
     required this.intereses,
   });
 
@@ -37,8 +37,8 @@ class Usuari {
     String? email,
     String? descripcio,
     String? cvUrl,
-    String? fotoPerfilUrl,
-    List<String>? intereses,  // Permet actualitzar interessos
+    String? avatar,
+    List<String>? intereses,
   }) {
     return Usuari(
       id: id,
@@ -48,7 +48,7 @@ class Usuari {
       rol: rol,
       descripcio: descripcio ?? this.descripcio,
       cvUrl: cvUrl ?? this.cvUrl,
-      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
+      avatar: avatar ?? this.avatar,
       intereses: intereses ?? this.intereses,
     );
   }
@@ -63,7 +63,7 @@ class Usuari {
       rol: map['rol'] == 'empresa' ? RolUsuari.empresa : RolUsuari.estudiant,
       descripcio: map['descripcio'] as String?,
       cvUrl: map['cvUrl'] as String?,
-      fotoPerfilUrl: map['fotoPerfilUrl'] as String?,
+      avatar: map['avatar'] as String?,         // llegim la clau de l'avatar
       intereses: List<String>.from(map['intereses'] ?? <String>[]),
     );
   }
@@ -76,7 +76,7 @@ class Usuari {
       'rol': rol.toString().split('.').last,
       'descripcio': descripcio,
       'cvUrl': cvUrl,
-      'fotoPerfilUrl': fotoPerfilUrl,
+      'avatar': avatar,                         // guardem la clau de l'avatar
       'intereses': intereses,
     };
   }

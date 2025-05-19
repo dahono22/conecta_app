@@ -15,6 +15,9 @@ class PerfilController {
   late TextEditingController cvUrlController;
   late RolUsuari rol;
 
+  /// Aquí mantenim la clau de l'avatar/logo seleccionat
+  String? avatar;
+
   PerfilController(this.context) {
     final u = Provider.of<AuthService>(context, listen: false).usuariActual!;
     nomController = TextEditingController(text: u.nom);
@@ -22,9 +25,9 @@ class PerfilController {
     descripcioController = TextEditingController(text: u.descripcio ?? '');
     cvUrlController = TextEditingController(text: u.cvUrl ?? '');
     rol = u.rol;
+    avatar = u.avatar; // ara sí, llegim la propietat correcta
   }
 
-  /// Envía un correo de verificación al nuevo email antes de actualizar
   Future<void> enviarVerificacioANouCorreu() async {
     final nouEmail = emailController.text.trim();
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -53,8 +56,12 @@ class PerfilController {
     }
   }
 
-  /// Guarda los cambios del formulario si el email ya ha sido verificado
-  Future<void> guardarCanvis(GlobalKey<FormState> formKey, List<String> intereses) async {
+  /// Ara accepta el paràmetre nombrat `nuevoAvatar` per persistir-lo
+  Future<void> guardarCanvis(
+    GlobalKey<FormState> formKey,
+    List<String> intereses, {
+    String? nuevoAvatar,
+  }) async {
     if (!formKey.currentState!.validate()) return;
     if (!context.mounted) return;
 
@@ -69,7 +76,7 @@ class PerfilController {
       final user = FirebaseAuth.instance.currentUser;
       await user?.reload();
 
-      // Actualiza el email en Auth si ha cambiado y ya verificado
+      // 1) Email
       if (nouEmail != usuari.email) {
         if (user?.email != nouEmail) {
           throw Exception('Has de verificar el nou correu abans de desar.');
@@ -78,7 +85,10 @@ class PerfilController {
         }
       }
 
-      // Construye el objeto usuario con los datos actualizados e intereses
+      // 2) Avatar opcional
+      avatar = nuevoAvatar ?? avatar;
+
+      // 3) Construïm el nou Usuari amb la propietat 'avatar'
       final nouUsuari = Usuari(
         id: usuari.id,
         nom: campNom,
@@ -87,10 +97,11 @@ class PerfilController {
         rol: rol,
         descripcio: campDesc,
         cvUrl: campCv,
+        avatar: avatar,
         intereses: rol == RolUsuari.estudiant ? intereses : [],
       );
 
-      // Guarda en Firestore y actualiza estado local
+      // 4) Guardem a Firestore i actualitzem estat local
       await authService.desarUsuariFirestore(nouUsuari);
       authService.usuariActual = nouUsuari;
 
@@ -105,7 +116,6 @@ class PerfilController {
     }
   }
 
-  /// Funcionalidad de subida de CV (actualmente deshabilitada)
   Future<void> pujarCV() async {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

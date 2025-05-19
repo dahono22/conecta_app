@@ -1,5 +1,3 @@
-// lib/utils/constants.dart
-
 /// Catálogo de campos/intereses disponibles para estudiantes y empresas
 typedef Campo = String;
 
@@ -70,5 +68,21 @@ class Constants {
   static const List<String> cursosOptions = [
     '1r curs',
     '2º curs',
+  ];
+
+  /// Avatares predefinidos para empresas
+  static const List<String> empresaAvatars = [
+    'assets/avatars/company1.png',
+    'assets/avatars/company2.png',
+    'assets/avatars/company3.png',
+    'assets/avatars/company4.png',
+  ];
+
+  /// Avatares predefinidos para estudiantes
+  static const List<String> studentAvatars = [
+    'assets/avatars/student1.png',
+    'assets/avatars/student2.png',
+    'assets/avatars/student3.png',
+    'assets/avatars/student4.png',
   ];
 }

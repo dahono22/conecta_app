@@ -26,6 +26,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
   List<String> _selectedInterests = [];
   String? _interestsError;
 
+  // --- Avatar seleccionat ---
+  String? _selectedAvatar;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +36,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final user = authService.usuariActual!;
     _selectedInterests = List.from(user.intereses);
+    // Iniciem amb l'avatar que vingui de Firestore (camp `avatar`)
+    _selectedAvatar = user.avatar;
+
     _carregarAplicacionsFuture = user.id.isNotEmpty
         ? Provider.of<OfferApplicationService>(context, listen: false)
             .carregarAplicacions(user.id)
@@ -51,7 +57,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  Widget _buildOfertesAplicadesFirestore(BuildContext context, List<String> ofertaIds) {
+  Widget _buildOfertesAplicadesFirestore(
+      BuildContext context, List<String> ofertaIds) {
     final usuariId = context.read<AuthService>().usuariActual!.id;
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -89,12 +96,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   final ofertaId = doc.id;
                   QueryDocumentSnapshot? aplicacio;
                   try {
-                    aplicacio = aplicacions.firstWhere((a) => a['ofertaId'] == ofertaId);
+                    aplicacio =
+                        aplicacions.firstWhere((a) => a['ofertaId'] == ofertaId);
                   } catch (_) {
                     aplicacio = null;
                   }
                   final estat =
-                      (aplicacio?.data() as Map<String, dynamic>?)?['estat'] ?? 'Nou';
+                      (aplicacio?.data() as Map<String, dynamic>?)?['estat'] ??
+                          'Nou';
                   return Card(
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
@@ -110,7 +119,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
-                          Text('${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}'),
+                          Text(
+                              '${data['empresa'] ?? ''} · ${data['ubicacio'] ?? ''}'),
                           const SizedBox(height: 4),
                           Text('Estat de la candidatura: $estat',
                               style: const TextStyle(color: Colors.blueGrey)),
@@ -155,25 +165,42 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final usuari = context.watch<AuthService>().usuariActual!;
     final isEmpresa = usuari.rol == RolUsuari.empresa;
 
+    // Rutes dins de /assets/avatars/
+final avatarOptions = isEmpresa
+    ? [
+        'assets/avatars/company1.png',
+        'assets/avatars/company2.png',
+        'assets/avatars/company3.png',
+        'assets/avatars/company4.png',
+      ]
+    : [
+        'assets/avatars/student1.png',
+        'assets/avatars/student2.png',
+        'assets/avatars/student3.png',
+        'assets/avatars/student4.png',
+      ];
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
           Image.asset('assets/background.png', fit: BoxFit.cover),
+          // semitransparent overlay
           Container(color: Colors.black.withOpacity(0.5)),
           Center(
             child: SingleChildScrollView(
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
+                      color: Colors.black26,
+                      blurRadius: 12,
+                      offset: Offset(0, 6),
                     ),
                   ],
                 ),
@@ -181,11 +208,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
+                      // Cabecera: volver & logout
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Colors.blueAccent),
+                            icon: const Icon(Icons.arrow_back,
+                                color: Colors.blueAccent),
                             onPressed: () {
                               final ruta = isEmpresa
                                   ? AppRoutes.homeEmpresa
@@ -195,35 +224,79 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             tooltip: 'Tornar',
                           ),
                           IconButton(
-                            icon: const Icon(Icons.logout, color: Colors.redAccent),
+                            icon: const Icon(Icons.logout,
+                                color: Colors.redAccent),
                             onPressed: _logout,
                             tooltip: 'Tancar sessió',
                           ),
                         ],
                       ),
 
+                      // Títol
                       Text(
-                        isEmpresa ? 'Perfil de l\'empresa' : 'Perfil de l\'estudiant',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        isEmpresa
+                            ? 'Perfil de l\'empresa'
+                            : 'Perfil de l\'estudiant',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 24),
 
+                      // --- Avatar picker ---
+                      const Text(
+                        'Selecciona el teu avatar:',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: avatarOptions.map((path) {
+                          final selected = path == _selectedAvatar;
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedAvatar = path),
+                            child: Container(
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  selected ? const EdgeInsets.all(4) : null,
+                              decoration: selected
+                                  ? BoxDecoration(
+                                      border: Border.all(
+                                          color: Colors.blueAccent,
+                                          width: 2),
+                                      shape: BoxShape.circle,
+                                    )
+                                  : null,
+                              child: CircleAvatar(
+                                radius: 30,
+                                backgroundImage: AssetImage(path),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Nom
                       TextFormField(
                         controller: _controller.nomController,
                         decoration: _inputDecoration('Nom complet'),
-                        validator: (value) =>
-                            value == null || value.isEmpty ? 'Camp obligatori' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Camp obligatori' : null,
                       ),
                       const SizedBox(height: 16),
 
+                      // Email
                       TextFormField(
                         controller: _controller.emailController,
                         decoration: _inputDecoration('Correu electrònic'),
-                        validator: (value) =>
-                            value == null || value.isEmpty ? 'Camp obligatori' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Camp obligatori' : null,
                       ),
                       const SizedBox(height: 8),
 
+                      // Verificar email
                       ElevatedButton.icon(
                         onPressed: _controller.enviarVerificacioANouCorreu,
                         icon: const Icon(Icons.email_outlined),
@@ -237,6 +310,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ),
 
+                      // Interessos (només estudiant)
                       if (!isEmpresa) ...[
                         const SizedBox(height: 20),
                         Align(
@@ -250,11 +324,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 6,
-                          children: Constants.camposDisponibles.map((campo) {
-                            final selected = _selectedInterests.contains(campo);
+                          children:
+                              Constants.camposDisponibles.map((campo) {
+                            final sel = _selectedInterests.contains(campo);
                             return FilterChip(
                               label: Text(campo),
-                              selected: selected,
+                              selected: sel,
                               onSelected: (_) => _toggleInterest(campo),
                             );
                           }).toList(),
@@ -265,52 +340,57 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             child: Text(
                               _interestsError!,
                               style: const TextStyle(
-                                color: Colors.redAccent,
-                                fontSize: 12,
-                              ),
+                                  color: Colors.redAccent, fontSize: 12),
                             ),
                           ),
                       ],
 
+                      // Descripció empresa (només empresa)
                       if (isEmpresa) ...[
                         const SizedBox(height: 16),
                         TextFormField(
-                          controller: _controller.descripcioController,
-                          decoration: _inputDecoration('Descripció de l\'empresa'),
+                          controller:
+                              _controller.descripcioController,
+                          decoration: _inputDecoration(
+                              'Descripció de l\'empresa'),
                           maxLines: 3,
                         ),
                         const SizedBox(height: 8),
                         const Text(
                           'Aquest text serà visible per als estudiants.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
 
+                      // CV URL (només estudiant)
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         const Text('Currículum (enllaç URL):',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _controller.cvUrlController,
-                          decoration:
-                              _inputDecoration('Enllaç al CV (Drive, Dropbox...)'),
+                          decoration: _inputDecoration(
+                              'Enllaç al CV (Drive, Dropbox...)'),
                           keyboardType: TextInputType.url,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final uri = Uri.tryParse(value);
+                          validator: (v) {
+                            if (v != null && v.isNotEmpty) {
+                              final uri = Uri.tryParse(v);
                               if (uri == null || !uri.hasAbsolutePath) {
-                                return 'L\'enllaç no és vàlid.';
+                                return 'Enllaç no vàlid.';
                               }
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 12),
-                        if (usuari.cvUrl != null && usuari.cvUrl!.isNotEmpty)
+                        if (usuari.cvUrl?.isNotEmpty ?? false)
                           Row(
                             children: [
-                              const Icon(Icons.check_circle, color: Colors.green),
+                              const Icon(Icons.check_circle,
+                                  color: Colors.green),
                               const SizedBox(width: 8),
                               const Text('Enllaç actual:'),
                               const Spacer(),
@@ -320,8 +400,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 onPressed: () async {
                                   final uri = Uri.parse(usuari.cvUrl!);
                                   if (await canLaunchUrl(uri)) {
-                                    await launchUrl(uri,
-                                        mode: LaunchMode.externalApplication);
+                                    await launchUrl(
+                                        uri,
+                                        mode: LaunchMode
+                                            .externalApplication);
                                   }
                                 },
                               ),
@@ -332,15 +414,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               'Encara no has afegit cap enllaç de currículum.'),
                       ],
 
+                      // Ofertes aplicades (només estudiant)
                       if (!isEmpresa) ...[
                         const SizedBox(height: 24),
                         FutureBuilder(
                           future: _carregarAplicacionsFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
+                          builder: (ctx, snap) {
+                            if (snap.connectionState ==
                                 ConnectionState.waiting) {
                               return const Center(
-                                  child: CircularProgressIndicator());
+                                  child:
+                                      CircularProgressIndicator());
                             }
                             final ids = context
                                 .read<OfferApplicationService>()
@@ -357,22 +441,32 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                       const SizedBox(height: 24),
 
+                      // Botó desar canvis
                       ElevatedButton.icon(
                         onPressed: () {
-                          if (!isEmpresa && _selectedInterests.isEmpty) {
-                            setState(() => _interestsError = 'Selecciona fins a 1 i 3 interessos');
+                          if (!isEmpresa &&
+                              _selectedInterests.isEmpty) {
+                            setState(() => _interestsError =
+                                'Selecciona fins a 1 i 3 interessos');
                             return;
                           }
-                          _controller.guardarCanvis(_formKey, _selectedInterests);
+                          _controller.guardarCanvis(
+  _formKey,
+  _selectedInterests,
+  nuevoAvatar: _selectedAvatar,
+);
+
                         },
                         icon: const Icon(Icons.save),
                         label: const Text('Desar canvis'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(50),
+                          minimumSize:
+                              const Size.fromHeight(50),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius:
+                                BorderRadius.circular(18),
                           ),
                         ),
                       ),
