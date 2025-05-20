@@ -1,3 +1,5 @@
+// lib/screens/home_empresa/home_empresa_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,13 +8,13 @@ import '../../services/auth_service.dart';
 import '../../routes/app_routes.dart';
 import '../chat/converses_empresa_screen.dart';
 
+/// Pantalla principal de l'empresa amb estil èpic i professional
 class HomeEmpresaScreen extends StatelessWidget {
   const HomeEmpresaScreen({super.key});
 
-  // Mètode per tancar sessió de l'empresa i tornar a la pantalla de login
   void _logout(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    authService.logout();
+    final auth = Provider.of<AuthService>(context, listen: false);
+    auth.logout();
     Navigator.pushNamedAndRemoveUntil(
       context,
       AppRoutes.login,
@@ -20,179 +22,234 @@ class HomeEmpresaScreen extends StatelessWidget {
     );
   }
 
-  // Navegació cap a la pantalla per crear una nova oferta
-  void _crearOferta(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.crearOferta);
+  void _navigate(BuildContext context, String route) {
+    Navigator.pushNamed(context, route);
   }
 
-  // Navegació cap a la llista d'ofertes publicades per l'empresa
-  void _veureMevesOfertes(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.mevesOfertes);
-  }
-
-  // Navegació cap a la pantalla de converses actives amb alumnes
-  void _veureConverses(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ConversesEmpresaScreen(),
-      ),
-    );
-  }
-
-  // Stream que carrega estadístiques en temps real: ofertes creades i aplicacions rebudes
   Stream<Map<String, int>> _estadistiquesStream(String empresaId) {
     final ofertesRef = FirebaseFirestore.instance
         .collection('ofertes')
         .where('empresaId', isEqualTo: empresaId);
 
-    return ofertesRef.snapshots().asyncMap((ofertesSnapshot) async {
-      final totalOfertes = ofertesSnapshot.docs.length; // nombre total d'ofertes
-      final ofertaIds = ofertesSnapshot.docs.map((doc) => doc.id).toList();
-
+    return ofertesRef.snapshots().asyncMap((snapshot) async {
+      final totalOfertes = snapshot.docs.length;
+      final ofertaIds = snapshot.docs.map((d) => d.id).toList();
       int totalAplicacions = 0;
       if (ofertaIds.isNotEmpty) {
-        final aplicacionsSnapshot = await FirebaseFirestore.instance
+        final appsSnap = await FirebaseFirestore.instance
             .collection('aplicacions')
             .where('ofertaId', whereIn: ofertaIds)
             .get();
-        totalAplicacions = aplicacionsSnapshot.docs.length; // total de candidatures rebudes
+        totalAplicacions = appsSnap.docs.length;
       }
-
       return {
-        'totalOfertes': totalOfertes,
-        'totalAplicacions': totalAplicacions,
+        'ofertes': totalOfertes,
+        'aplicacions': totalAplicacions,
       };
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final empresa = Provider.of<AuthService>(context).usuariActual; // Obté l'empresa actual
-    final empresaId = empresa?.id ?? '';
+    final authService = Provider.of<AuthService>(context);
+    final empresa = authService.usuariActual!;
+    final empresaId = empresa.id;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA), // color de fons suau per coherència visual
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'assets/images/logo.png', // Ruta del logo
-            width: 40,  // Ajusta el tamaño según sea necesario
-            height: 40,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => _logout(context), // tancar sessió
-            icon: const Icon(Icons.logout, color: Colors.redAccent),
-            tooltip: 'Tancar sessió',
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset('assets/background.png', fit: BoxFit.cover),
+          Container(color: Colors.black.withOpacity(0.6)),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.all(26),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo i Benvinguda
+                      Center(
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              'assets/images/logo.png',
+                              width: 120,
+                              height: 60,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Benvinguda, ${empresa.nom}!',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Estadístiques
+                      StreamBuilder<Map<String, int>>(
+                        stream: _estadistiquesStream(empresaId),
+                        builder: (context, snap) {
+                          if (!snap.hasData) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          final stats = snap.data!;
+
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _StatCard(
+                                label: 'Ofertes',
+                                value: stats['ofertes']!,
+                                icon: Icons.description,
+                                color: Colors.blueAccent,
+                              ),
+                              _StatCard(
+                                label: 'Candidatures',
+                                value: stats['aplicacions']!,
+                                icon: Icons.people,
+                                color: Colors.indigoAccent,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 36),
+
+                      // Botons d'acció
+                      _ActionButton(
+                        icon: Icons.person,
+                        label: 'Veure Perfil',
+                        color: Colors.teal,
+                        onTap: () => _navigate(context, AppRoutes.perfil),
+                      ),
+                      const SizedBox(height: 16),
+                      _ActionButton(
+                        icon: Icons.add_business,
+                        label: 'Nova Oferta',
+                        color: Colors.orangeAccent,
+                        onTap: () => _navigate(context, AppRoutes.crearOferta),
+                      ),
+                      const SizedBox(height: 16),
+                      _ActionButton(
+                        icon: Icons.list_alt,
+                        label: 'Les Meves Ofertes',
+                        color: Colors.deepPurple,
+                        onTap: () => _navigate(context, AppRoutes.mevesOfertes),
+                      ),
+                      const SizedBox(height: 16),
+                      _ActionButton(
+                        icon: Icons.chat_bubble,
+                        label: 'Converses Actives',
+                        color: Colors.pinkAccent,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ConversesEmpresaScreen(),
+                          ),
+                        ),
+                      ),
+                      // S'ha eliminat el botó "Tancar Sessió" perquè ja es troba a la pantalla de Perfil
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      // Mostra estadístiques en temps real amb StreamBuilder
-      body: StreamBuilder<Map<String, int>>(
-        stream: _estadistiquesStream(empresaId),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator()); // carregant...
-          }
+    );
+  }
+}
 
-          final stats = snapshot.data!;
+/// Widget per mostrar una estadística en un card petit
+class _StatCard extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color color;
 
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Benvinguda, Empresa!',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        children: [
-                          Text('📄 Ofertes publicades: ${stats['totalOfertes']}'),
-                          const SizedBox(height: 8),
-                          Text('👥 Candidatures rebudes: ${stats['totalAplicacions']}'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.perfil),
-                    icon: const Icon(Icons.person),
-                    label: const Text('Veure perfil'),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => _crearOferta(context),
-                    icon: const Icon(Icons.add_business),
-                    label: const Text('Publicar nova oferta'),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      backgroundColor: Colors.blueGrey.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => _veureMevesOfertes(context),
-                    icon: const Icon(Icons.list),
-                    label: const Text('Veure les meves ofertes'),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      backgroundColor: Colors.indigoAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => _veureConverses(context),
-                    icon: const Icon(Icons.chat),
-                    label: const Text('Converses actives'),
-                  ),
-                ],
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 6,
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              '$value',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-          );
-        },
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 14)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Botó d'acció estilitzat
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 20),
+      label: Text(label, style: const TextStyle(fontSize: 16)),
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size.fromHeight(50),
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        elevation: 4,
       ),
     );
   }
