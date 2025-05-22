@@ -26,6 +26,43 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
   String _selectedJornada = 'Totes';
   bool _filterCurso1 = false;
   bool _filterCurso2 = false;
+  // 1️⃣ Método para leer la ruta del avatar desde Firestore
+Future<String?> _fetchEmpresaAvatar(String empresaId) async {
+  final doc = await FirebaseFirestore.instance
+      .collection('usuaris')
+      .doc(empresaId)
+      .get();
+  return doc.data()?['avatar'] as String?;
+}
+
+// 2️⃣ Método para crear el CircleAvatar normalizando la ruta
+Widget _buildEmpresaAvatar(String empresaId, {double radius = 20}) {
+  return FutureBuilder<String?>(
+    future: _fetchEmpresaAvatar(empresaId),
+    builder: (context, snap) {
+      // Ruta por defecto si no hay avatar
+      String assetPath = 'assets/avatars/default.png';
+
+      if (snap.hasData && (snap.data?.isNotEmpty ?? false)) {
+        String raw = snap.data!;
+
+        // Si viene con carpeta incluida, nos quedamos solo con el nombre
+        if (raw.contains('/')) {
+          raw = raw.split('/').last;
+        }
+        // Quitamos cualquier ".png" extra
+        raw = raw.replaceAll(RegExp(r'\.png$', caseSensitive: false), '');
+
+        assetPath = 'assets/avatars/$raw.png';
+      }
+
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: AssetImage(assetPath),
+      );
+    },
+  );
+}
 
   @override
   void initState() {
@@ -38,6 +75,9 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
     _searchController.dispose();
     super.dispose();
   }
+
+
+
 
   List<DocumentSnapshot> _filtrarOfertes(List<DocumentSnapshot> docs) {
     final query = _searchController.text.toLowerCase();
@@ -151,276 +191,281 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
           SafeArea(
             child: Column(
               children: [
-                const SizedBox(height: kToolbarHeight),
-                // Panel de filtros
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromRGBO(0, 0, 0, 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Filtrar ofertes',
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 12),
-                        // Búsqueda
-                        TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            labelText: 'Paraula clau',
-                            prefixIcon: const Icon(Icons.search),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 16),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
+                // Sección de filtros (fija en la parte superior)
+                Container(
+                  color: Colors.transparent,
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromRGBO(0, 0, 0, 0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        // Ubicación y Modalidad en fila
-                        Row(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance
-                                    .collection('ofertes')
-                                    .snapshots(),
-                                builder: (c, s) {
-                                  final docs = s.data?.docs ?? [];
-                                  final ubicacions = docs
-                                      .map((d) =>
-                                          (d.data() as Map)['ubicacio']
-                                              as String)
-                                      .toSet()
-                                      .toList()
-                                    ..sort();
-                                  return DropdownButtonFormField<String>(
+                            const Text(
+                              'Filtrar ofertes',
+                              style: TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            // Búsqueda
+                            TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                labelText: 'Paraula clau',
+                                prefixIcon: const Icon(Icons.search),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Ubicación y Modalidad en fila
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('ofertes')
+                                        .snapshots(),
+                                    builder: (c, s) {
+                                      final docs = s.data?.docs ?? [];
+                                      final ubicacions = docs
+                                          .map((d) =>
+                                              (d.data() as Map)['ubicacio']
+                                                  as String)
+                                          .toSet()
+                                          .toList()
+                                        ..sort();
+                                      return DropdownButtonFormField<String>(
+                                        isExpanded: true,
+                                        value: _selectedUbicacio,
+                                        decoration:
+                                            _dropdownDecoration('Ubicació'),
+                                        items: ['Totes', ...ubicacions]
+                                            .map((u) => DropdownMenuItem(
+                                                  value: u,
+                                                  child: Text(u),
+                                                ))
+                                            .toList(),
+                                        onChanged: (v) =>
+                                            setState(() => _selectedUbicacio = v),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
                                     isExpanded: true,
-                                    value: _selectedUbicacio,
+                                    value: _selectedModalidad,
                                     decoration:
-                                        _dropdownDecoration('Ubicació'),
-                                    items: ['Totes', ...ubicacions]
-                                        .map((u) => DropdownMenuItem(
-                                              value: u,
-                                              child: Text(u),
-                                            ))
-                                        .toList(),
-                                    onChanged: (v) =>
-                                        setState(() => _selectedUbicacio = v),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                value: _selectedModalidad,
-                                decoration:
-                                    _dropdownDecoration('Modalitat'),
-                                items: Constants.modalidadOptions
-                                    .map((m) => DropdownMenuItem(
-                                          value: m,
-                                          child: Text(m),
-                                        ))
-                                    .toList(),
-                                onChanged: (v) => setState(
-                                    () => _selectedModalidad = v),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Dual intensiva y Remunerada
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CheckboxListTile(
-                                title: const Text('Dual intensiva'),
-                                value: _dualIntensiva,
-                                onChanged: (v) => setState(
-                                    () => _dualIntensiva = v!),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                              ),
-                            ),
-                            Expanded(
-                              child: CheckboxListTile(
-                                title: const Text('Remunerada'),
-                                value: _remunerada,
-                                onChanged: (v) => setState(
-                                    () => _remunerada = v!),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Campo y Duración
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                value: _selectedCampo,
-                                decoration: _dropdownDecoration('Camp'),
-                                items: ['Tots', ...Constants.camposDisponibles]
-                                    .map((c) => DropdownMenuItem(
-                                          value: c,
-                                          child: Text(c),
-                                        ))
-                                    .toList(),
-                                onChanged: (v) =>
-                                    setState(() => _selectedCampo = v),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                value: _selectedDuracion,
-                                decoration:
-                                    _dropdownDecoration('Duració'),
-                                items: Constants.duracionOptions
-                                    .map((d) => DropdownMenuItem(
-                                          value: d,
-                                          child: Text(d),
-                                        ))
-                                    .toList(),
-                                onChanged: (v) =>
-                                    setState(() => _selectedDuracion = v),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Fecha de publicación
-                        DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          value: _selectedFecha,
-                          decoration:
-                              _dropdownDecoration('Publicació'),
-                          items: Constants.fechaPublicacionOptions
-                              .map((f) => DropdownMenuItem(
-                                    value: f,
-                                    child: Text(f),
-                                  ))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedFecha = v!),
-                        ),
-                        const SizedBox(height: 12),
-                        // Experiencia requerida
-                        CheckboxListTile(
-                          title: const Text('Requereix experiència'),
-                          value: _experienciaRequerida,
-                          onChanged: (v) => setState(
-                              () => _experienciaRequerida = v!),
-                          controlAffinity:
-                              ListTileControlAffinity.leading,
-                        ),
-                        const SizedBox(height: 12),
-                        // Empresa específica y Jornada
-                        Row(
-                          children: [
-                            Expanded(
-                              child: StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance
-                                    .collection('ofertes')
-                                    .snapshots(),
-                                builder: (c, s) {
-                                  final docs = s.data?.docs ?? [];
-                                  final empresas = docs
-                                      .map((d) =>
-                                          (d.data() as Map)['empresa']
-                                              as String)
-                                      .toSet()
-                                      .toList()
-                                    ..sort();
-                                  return DropdownButtonFormField<String>(
-                                    isExpanded: true,
-                                    value: _selectedEmpresa,
-                                    decoration:
-                                        _dropdownDecoration('Empresa'),
-                                    items: ['Totes', ...empresas]
-                                        .map((e) => DropdownMenuItem(
-                                              value: e,
-                                              child: Text(e),
+                                        _dropdownDecoration('Modalitat'),
+                                    items: Constants.modalidadOptions
+                                        .map((m) => DropdownMenuItem(
+                                              value: m,
+                                              child: Text(m),
                                             ))
                                         .toList(),
                                     onChanged: (v) => setState(
-                                        () => _selectedEmpresa = v),
-                                  );
-                                },
-                              ),
+                                        () => _selectedModalidad = v),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                value: _selectedJornada,
-                                decoration:
-                                    _dropdownDecoration('Jornada'),
-                                items: Constants.jornadaOptions
-                                    .map((j) => DropdownMenuItem(
-                                          value: j,
-                                          child: Text(j),
-                                        ))
-                                    .toList(),
-                                onChanged: (v) =>
-                                    setState(() => _selectedJornada = v!),
-                              ),
+                            const SizedBox(height: 12),
+                            // Dual intensiva y Remunerada
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    title: const Text('Dual intensiva'),
+                                    value: _dualIntensiva,
+                                    onChanged: (v) => setState(
+                                        () => _dualIntensiva = v!),
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    title: const Text('Remunerada'),
+                                    value: _remunerada,
+                                    onChanged: (v) => setState(
+                                        () => _remunerada = v!),
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Campo y Duración
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    value: _selectedCampo,
+                                    decoration: _dropdownDecoration('Camp'),
+                                    items: ['Tots', ...Constants.camposDisponibles]
+                                        .map((c) => DropdownMenuItem(
+                                              value: c,
+                                              child: Text(c),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) =>
+                                        setState(() => _selectedCampo = v),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    value: _selectedDuracion,
+                                    decoration:
+                                        _dropdownDecoration('Duració'),
+                                    items: Constants.duracionOptions
+                                        .map((d) => DropdownMenuItem(
+                                              value: d,
+                                              child: Text(d),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) =>
+                                        setState(() => _selectedDuracion = v),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Fecha de publicación
+                            DropdownButtonFormField<String>(
+                              isExpanded: true,
+                              value: _selectedFecha,
+                              decoration:
+                                  _dropdownDecoration('Publicació'),
+                              items: Constants.fechaPublicacionOptions
+                                  .map((f) => DropdownMenuItem(
+                                        value: f,
+                                        child: Text(f),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) =>
+                                  setState(() => _selectedFecha = v!),
+                            ),
+                            const SizedBox(height: 12),
+                            // Experiencia requerida
+                            CheckboxListTile(
+                              title: const Text('Requereix experiència'),
+                              value: _experienciaRequerida,
+                              onChanged: (v) => setState(
+                                  () => _experienciaRequerida = v!),
+                              controlAffinity:
+                                  ListTileControlAffinity.leading,
+                            ),
+                            const SizedBox(height: 12),
+                            // Empresa específica y Jornada
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('ofertes')
+                                        .snapshots(),
+                                    builder: (c, s) {
+                                      final docs = s.data?.docs ?? [];
+                                      final empresas = docs
+                                          .map((d) =>
+                                              (d.data() as Map)['empresa']
+                                                  as String)
+                                          .toSet()
+                                          .toList()
+                                        ..sort();
+                                      return DropdownButtonFormField<String>(
+                                        isExpanded: true,
+                                        value: _selectedEmpresa,
+                                        decoration:
+                                            _dropdownDecoration('Empresa'),
+                                        items: ['Totes', ...empresas]
+                                            .map((e) => DropdownMenuItem(
+                                                  value: e,
+                                                  child: Text(e),
+                                                ))
+                                            .toList(),
+                                        onChanged: (v) => setState(
+                                            () => _selectedEmpresa = v),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    value: _selectedJornada,
+                                    decoration:
+                                        _dropdownDecoration('Jornada'),
+                                    items: Constants.jornadaOptions
+                                        .map((j) => DropdownMenuItem(
+                                              value: j,
+                                              child: Text(j),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) =>
+                                        setState(() => _selectedJornada = v!),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Curso destinatario
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    title: const Text('1r curs'),
+                                    value: _filterCurso1,
+                                    onChanged: (v) => setState(
+                                        () => _filterCurso1 = v!),
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    title: const Text('2º curs'),
+                                    value: _filterCurso2,
+                                    onChanged: (v) => setState(
+                                        () => _filterCurso2 = v!),
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        // Curso destinatario
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CheckboxListTile(
-                                title: const Text('1r curs'),
-                                value: _filterCurso1,
-                                onChanged: (v) => setState(
-                                    () => _filterCurso1 = v!),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                              ),
-                            ),
-                            Expanded(
-                              child: CheckboxListTile(
-                                title: const Text('2º curs'),
-                                value: _filterCurso2,
-                                onChanged: (v) => setState(
-                                    () => _filterCurso2 = v!),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Listado filtrado
+                
+                // Listado de ofertas con scroll independiente
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -440,48 +485,42 @@ class _ListOfertesScreenState extends State<ListOfertesScreen> {
                             child: Text('No hi ha coincidències.'));
                       }
                       return ListView.builder(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
+                        physics: const BouncingScrollPhysics(),
                         itemCount: filtrades.length,
                         itemBuilder: (context, index) {
                           final data = filtrades[index]
                               .data() as Map<String, dynamic>;
                           final id = filtrades[index].id;
                           return Card(
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-  elevation: 3,
-  margin: const EdgeInsets.symmetric(vertical: 8),
-  child: ListTile(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            elevation: 3,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                              leading: _buildEmpresaAvatar(
+  data['empresaId'] as String,
+  radius: 20,
+),
 
-    // <-- Nuevo: mostramos el avatar de la empresa si existe
-    leading: () {
-      final avatarKey = data['empresaAvatar'] as String?;
-      if (avatarKey != null && avatarKey.isNotEmpty) {
-        return CircleAvatar(
-          backgroundImage: AssetImage('assets/avatars/$avatarKey.png'),
-        );
-      }
-      return null;
-    }(),
-
-    title: Text(
-      data['titol'] ?? '',
-      style: const TextStyle(fontWeight: FontWeight.w600),
-    ),
-    subtitle: Text(
-      '${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}',
-    ),
-    onTap: () {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.detallOferta,
-        arguments: id,
-      );
-    },
-  ),
-);
-
+                              title: Text(
+                                data['titol'] ?? '',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Text(
+                                '${data['empresa'] ?? ''} - ${data['ubicacio'] ?? ''}',
+                              ),
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.detallOferta,
+                                  arguments: id,
+                                );
+                              },
+                            ),
+                          );
                         },
                       );
                     },
