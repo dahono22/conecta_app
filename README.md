@@ -71,13 +71,6 @@ flutter pub get
 flutter run
 ```
 
-
----
-
-## 📝 Licencia
-
-Este proyecto está publicado bajo la licencia MIT. Consulta el archivo [LICENSE](./LICENSE) para más detalles.
-
 ---
 
 > 📚 Proyecto realizado como parte del Trabajo de Final de Ciclo del Grado Superior en Desarrollo de Aplicaciones Multiplataforma (DAM).
