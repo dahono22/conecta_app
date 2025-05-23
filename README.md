@@ -34,16 +34,6 @@ Puedes descargar la última versión de Conecta App desde el siguiente enlace:
 
 ---
 
-## 📷 Capturas de pantalla
-
-> *(Agrega imágenes reales de tu app aquí si las tienes)*
-
-| Inicio                                     | Chat                                   | Panel de Admin                           |
-| ------------------------------------------ | -------------------------------------- | ---------------------------------------- |
-| ![Inicio](./assets/screenshots/inicio.png) | ![Chat](./assets/screenshots/chat.png) | ![Admin](./assets/screenshots/admin.png) |
-
----
-
 ## 📁 Estructura del proyecto
 
 ```
